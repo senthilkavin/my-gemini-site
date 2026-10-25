@@ -1,0 +1,6 @@
+{
+  "name": "GokulaKrishnan Agencies - Cements, Insecticides, Pesticides & Chemical Stockist",
+  "description": "Authorized wholesale merchant stockist portal for Ordinary Building Cements (UltraTech OPC/PPC), Insecticides, Pesticides, Weedicides, Ant and Rat Poison with live godown stock count and official tax invoice / bill printing in INR (₹). Managed by Sahadevan (+91 9486426294) & Arun Kavinaya (+91 9790974822).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
