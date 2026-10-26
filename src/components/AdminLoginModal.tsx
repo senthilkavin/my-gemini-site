@@ -38,15 +38,13 @@ export const AdminLoginModal: React.FC = () => {
 
   // Password Recovery States
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [recoveryTab, setRecoveryTab] = useState<'instant' | 'link' | 'reveal'>('instant');
+  const [recoveryTab, setRecoveryTab] = useState<'instant' | 'link'>('instant');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetFeedback, setResetFeedback] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
-  const [copiedPassword, setCopiedPassword] = useState(false);
-  const [showPassText, setShowPassText] = useState(false);
 
   if (!isLoginModalOpen) return null;
 
@@ -55,7 +53,7 @@ export const AdminLoginModal: React.FC = () => {
     setErrorMsg('');
     const success = adminLogin(username, password);
     if (!success) {
-      setErrorMsg(`Incorrect password. Default is "gokul123" or click "Forgot Password?" to reset.`);
+      setErrorMsg('Incorrect owner password. Please try again or click "Forgot Password?" to reset.');
     }
   };
 
@@ -168,17 +166,17 @@ export const AdminLoginModal: React.FC = () => {
             </div>
 
             {/* Recovery Mode Selector Tabs */}
-            <div className="grid grid-cols-3 gap-1 bg-stone-100 p-1 rounded-2xl border border-stone-200">
+            <div className="grid grid-cols-2 gap-1.5 bg-stone-100 p-1.5 rounded-2xl border border-stone-200">
               <button
                 type="button"
                 onClick={() => setRecoveryTab('instant')}
-                className={`py-2 px-1 text-center font-bold text-[11px] rounded-xl transition-all ${
+                className={`py-2 px-2 text-center font-bold text-xs rounded-xl transition-all ${
                   recoveryTab === 'instant'
                     ? 'bg-emerald-700 text-white shadow-sm'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
-                1. Set New Pass
+                1. Set New Password
               </button>
               <button
                 type="button"
@@ -186,24 +184,13 @@ export const AdminLoginModal: React.FC = () => {
                   setRecoveryTab('link');
                   if (!generatedLink) handleGenerateLink();
                 }}
-                className={`py-2 px-1 text-center font-bold text-[11px] rounded-xl transition-all ${
+                className={`py-2 px-2 text-center font-bold text-xs rounded-xl transition-all ${
                   recoveryTab === 'link'
                     ? 'bg-emerald-700 text-white shadow-sm'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
-                2. Reset Link
-              </button>
-              <button
-                type="button"
-                onClick={() => setRecoveryTab('reveal')}
-                className={`py-2 px-1 text-center font-bold text-[11px] rounded-xl transition-all ${
-                  recoveryTab === 'reveal'
-                    ? 'bg-emerald-700 text-white shadow-sm'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                3. Show Pass
+                2. Get Reset Link
               </button>
             </div>
 
@@ -350,60 +337,6 @@ export const AdminLoginModal: React.FC = () => {
               </div>
             )}
 
-            {/* TAB 3: Reveal Current Password */}
-            {recoveryTab === 'reveal' && (
-              <div className="space-y-4 animate-in fade-in">
-                <div className="bg-emerald-50 border border-emerald-300 p-4 rounded-2xl space-y-2">
-                  <span className="text-[11px] font-bold text-emerald-900 block">
-                    Current Active Password for Owner Access:
-                  </span>
-
-                  <div className="flex items-center gap-2 bg-white border border-emerald-300 rounded-xl p-3">
-                    <span className="font-mono font-extrabold text-base text-stone-900 flex-1">
-                      {showPassText ? (ownerPassword || 'gokul123') : '••••••••'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassText(!showPassText)}
-                      className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-600"
-                      title={showPassText ? 'Hide Password' : 'Show Password'}
-                    >
-                      {showPassText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(ownerPassword || 'gokul123');
-                        setCopiedPassword(true);
-                        setTimeout(() => setCopiedPassword(false), 2000);
-                        showToast('Password copied to clipboard!');
-                      }}
-                      className="px-2.5 py-1.5 rounded-lg bg-emerald-700 text-white font-bold text-[10px] hover:bg-emerald-800 transition-colors"
-                    >
-                      {copiedPassword ? 'Copied' : 'Copy'}
-                    </button>
-                  </div>
-
-                  <p className="text-[10px] text-emerald-800 pt-1">
-                    You can copy this current password or click the button below to auto-fill it and log in.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPassword(ownerPassword || 'gokul123');
-                    setShowForgotPassword(false);
-                    adminLogin(username || 'admin', ownerPassword || 'gokul123');
-                  }}
-                  className="w-full py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <Lock className="w-4 h-4" />
-                  Auto-Fill Current Password & Log In
-                </button>
-              </div>
-            )}
-
             {/* Back Button */}
             <div className="pt-2 border-t border-stone-200">
               <button
@@ -478,8 +411,8 @@ export const AdminLoginModal: React.FC = () => {
                   />
                 </div>
                 <div className="flex justify-between items-center text-[10px] text-stone-500 mt-1.5">
-                  <span>
-                    Current default: <strong className="text-stone-700 font-mono">{ownerPassword || 'gokul123'}</strong>
+                  <span className="text-stone-400">
+                    Protected Owner Access
                   </span>
                   <button
                     type="button"

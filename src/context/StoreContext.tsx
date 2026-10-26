@@ -341,7 +341,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return true;
     }
 
-    showToast('Invalid credentials. Hint: Username "admin" and password "gokul123"');
+    showToast('Invalid credentials. Please verify your username and password or reset it.');
     return false;
   };
 
