@@ -88,6 +88,10 @@ interface StoreContextType {
   loadSampleBills: () => void;
   selectedBillForPrint: SalesBill | null;
   setSelectedBillForPrint: (bill: SalesBill | null) => void;
+
+  // Dynamic Owner Password & Recovery
+  ownerPassword: string;
+  updateOwnerPassword: (newPass: string) => void;
 }
 
 const STORAGE_KEYS = {
@@ -95,6 +99,7 @@ const STORAGE_KEYS = {
   ADJUSTMENTS: 'gokulakrishnan_adjustments_v4',
   BILLS: 'gokulakrishnan_sales_bills_v4',
   ADMIN_AUTH: 'gokulakrishnan_admin_auth_v4',
+  OWNER_PASS: 'gokulakrishnan_owner_password_v4',
 };
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -193,6 +198,31 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [currentAdmin]);
 
+  const [ownerPassword, setOwnerPassword] = useState<string>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.OWNER_PASS) || 'gokul123';
+    } catch {
+      return 'gokul123';
+    }
+  });
+
+  const updateOwnerPassword = (newPass: string) => {
+    const clean = newPass.trim();
+    if (!clean) return;
+    setOwnerPassword(clean);
+    try {
+      localStorage.setItem(STORAGE_KEYS.OWNER_PASS, clean);
+      setDoc(doc(db, 'system_config', 'credentials'), {
+        ownerPassword: clean,
+        updatedAt: new Date().toISOString(),
+        updatedForEmail: 'sskavinsenthil2311@gmail.com',
+      }).catch(() => {});
+    } catch (e) {
+      console.warn('Could not save password to storage', e);
+    }
+    showToast('Owner password reset successfully! You can now log in.');
+  };
+
   // Connect to Firestore and sync real-time collections
   useEffect(() => {
     testFirebaseConnection();
@@ -249,10 +279,25 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       (err) => console.warn('Firestore adjustments listener:', err)
     );
 
+    // Listen to credentials in Firestore
+    const unsubCreds = onSnapshot(
+      doc(db, 'system_config', 'credentials'),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (data?.ownerPassword) {
+            setOwnerPassword(data.ownerPassword);
+          }
+        }
+      },
+      (err) => console.warn('Firestore credentials listener:', err)
+    );
+
     return () => {
       unsubProducts();
       unsubBills();
       unsubAdjustments();
+      unsubCreds();
     };
   }, []);
 
@@ -268,10 +313,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Standard owner accounts or general admin
     if (
-      (cleanUser === 'admin' && (cleanPass === 'gokul123' || cleanPass === 'admin' || cleanPass === 'password')) ||
-      (cleanUser === 'sahadevan' && (cleanPass === 'gokul123' || cleanPass === '9486426294')) ||
-      (cleanUser === 'arun' && (cleanPass === 'gokul123' || cleanPass === '9790974822')) ||
-      (cleanPass === 'gokul123') // universal owner master key
+      cleanPass === ownerPassword ||
+      cleanPass === 'gokul123' ||
+      (cleanUser === 'admin' && (cleanPass === 'admin' || cleanPass === 'password')) ||
+      (cleanUser === 'sahadevan' && cleanPass === '9486426294') ||
+      (cleanUser === 'arun' && cleanPass === '9790974822')
     ) {
       const userObj: AdminUser =
         cleanUser === 'arun'
@@ -711,6 +757,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         loadSampleBills,
         selectedBillForPrint,
         setSelectedBillForPrint,
+        ownerPassword,
+        updateOwnerPassword,
       }}
     >
       {children}

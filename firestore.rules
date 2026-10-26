@@ -25,5 +25,10 @@ service cloud.firestore {
     match /stock_adjustments/{adjustmentId} {
       allow read, write: if true;
     }
+
+    // System configuration & credentials
+    match /system_config/{configId} {
+      allow read, write: if true;
+    }
   }
 }
