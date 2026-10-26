@@ -43,30 +43,47 @@
     print-color-adjust: exact !important;
   }
 
+  html,
   body {
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Hide entire web application frame and UI when printing bill modal */
+  /* HIDE EVERYTHING ON THE WEBPAGE: Dashboard, Navbar, Main, Footer, Modals */
   nav,
   header,
   footer,
   aside,
+  main,
   .print-hidden,
-  .print\:hidden {
+  .print\:hidden,
+  #root > div > main,
+  #root > div > nav,
+  #root > div > footer,
+  #root > div > .sm\:hidden {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
+  /* Bill Modal Overlay becomes clean paper wrapper */
   #bill-modal-overlay {
     position: static !important;
-    background: transparent !important;
+    background: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
     display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    inset: auto !important;
   }
 
   #bill-modal-card {
@@ -77,14 +94,22 @@
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: #ffffff !important;
+    display: block !important;
   }
 
+  /* The actual invoice */
   #printable-bill {
+    display: block !important;
+    visibility: visible !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    max-width: 100% !important;
     background: #ffffff !important;
     color: #1c1917 !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 }
 

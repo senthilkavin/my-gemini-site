@@ -446,3 +446,46 @@ export const copyBillWhatsAppText = async (bill: SalesBill): Promise<boolean> =>
     return successful;
   }
 };
+
+/**
+ * Opens a dedicated hidden print frame containing ONLY the Bill and triggers printing.
+ * This guarantees that only the bill is printed and never any page chrome, dashboard, or background.
+ */
+export const printBillDocument = (bill: SalesBill): void => {
+  const existingFrame = document.getElementById('gka-print-frame');
+  if (existingFrame) {
+    existingFrame.remove();
+  }
+
+  const iframe = document.createElement('iframe');
+  iframe.id = 'gka-print-frame';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.visibility = 'hidden';
+  document.body.appendChild(iframe);
+
+  const html = generatePrintableInvoiceHtml(bill);
+
+  const doc = iframe.contentWindow?.document || iframe.contentDocument;
+  if (doc) {
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.warn('Iframe print deferred, calling window.print', e);
+        window.print();
+      }
+    }, 350);
+  } else {
+    window.print();
+  }
+};

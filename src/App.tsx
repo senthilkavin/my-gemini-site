@@ -26,7 +26,7 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-stone-50 font-sans selection:bg-emerald-600 selection:text-white pb-16 sm:pb-0">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-20 sm:bottom-6 right-5 z-50 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-stone-700 flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-200 max-w-sm">
+        <div className="fixed bottom-20 sm:bottom-6 right-5 z-50 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-stone-700 flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-200 max-w-sm print:hidden">
           <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4 h-4 text-white" />
           </div>
@@ -34,11 +34,13 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Navigation */}
-      <Navbar />
+      {/* Navigation (Hidden on print) */}
+      <div className="print:hidden">
+        <Navbar />
+      </div>
 
-      {/* Main View Router */}
-      <main className="flex-1">
+      {/* Main View Router (Hidden on print - only the bill modal prints!) */}
+      <main className="flex-1 print:hidden">
         {activeTab === 'home' && <HomeSection />}
         {activeTab === 'about' && <AboutSection />}
         {activeTab === 'products' && <ProductsSection />}
@@ -46,11 +48,13 @@ const AppContent: React.FC = () => {
         {activeTab === 'admin' && <AdminDashboard />}
       </main>
 
-      {/* Footer */}
-      <Footer />
+      {/* Footer (Hidden on print) */}
+      <div className="print:hidden">
+        <Footer />
+      </div>
 
       {/* Sticky Mobile Direct Call & Owner Action Bar for All Devices */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-stone-950/95 backdrop-blur-md border-t border-stone-800 p-2 flex items-center justify-between gap-2 shadow-2xl">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-stone-950/95 backdrop-blur-md border-t border-stone-800 p-2 flex items-center justify-between gap-2 shadow-2xl print:hidden">
         <a
           href="tel:+919486426294"
           className="flex-1 py-2 px-2 rounded-xl bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow"
@@ -85,7 +89,9 @@ const AppContent: React.FC = () => {
       </div>
 
       {/* Admin Login Modal for Owners */}
-      <AdminLoginModal />
+      <div className="print:hidden">
+        <AdminLoginModal />
+      </div>
 
       {/* Global Bill Print Modal (Accessible anywhere across the app) */}
       <BillPrintModal

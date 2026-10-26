@@ -12,7 +12,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { SalesBill } from '../types';
-import { downloadPrintableInvoice, copyBillWhatsAppText } from '../utils/printInvoice';
+import { downloadPrintableInvoice, copyBillWhatsAppText, printBillDocument } from '../utils/printInvoice';
 
 interface BillPrintModalProps {
   bill: SalesBill | null;
@@ -42,20 +42,10 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ bill, onClose })
   if (!bill) return null;
 
   const handlePrint = () => {
-    setPrintTip('Preparing printable bill...');
-    const isInIframe = window.self !== window.top;
-    try {
-      window.print();
-    } catch (e) {
-      console.warn('Direct print interrupted', e);
-    }
-
-    if (isInIframe) {
-      downloadPrintableInvoice(bill);
-      setPrintTip('Print requested! Self-printing invoice downloaded to bypass iframe restrictions. Open the file to print directly!');
-    } else {
-      setPrintTip('Print dialog requested! You can also click "Download File" to save offline.');
-    }
+    setPrintTip('Sending official bill to printer...');
+    printBillDocument(bill);
+    setPrintTip('Print preview opened! ONLY the Official Bill is being printed.');
+    setTimeout(() => setPrintTip(null), 4000);
   };
 
   const handleDownload = () => {
