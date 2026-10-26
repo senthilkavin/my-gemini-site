@@ -175,34 +175,13 @@ export const ProductsSection: React.FC = () => {
             </button>
           )}
 
-          <button
-            onClick={() => {
-              if (isAdminLoggedIn) {
-                setActiveTab('admin');
-              } else {
-                setIsLoginModalOpen(true);
-              }
-            }}
-            className="py-2.5 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all"
-          >
-            <Receipt className="w-4 h-4" /> Sales Bill &amp; Payments
-          </button>
-
-          {isAdminLoggedIn ? (
+          {isAdminLoggedIn && (
             <button
               onClick={() => setIsFormExpanded(!isFormExpanded)}
-              className="py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-emerald-900/40 transition-all"
+              className="py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-emerald-900/40 transition-all cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
               {isFormExpanded ? 'Hide Add Form' : '+ Enter Product & Stock'}
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsLoginModalOpen(true)}
-              className="py-2.5 px-4 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/30 font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all"
-              title="Stock entry is restricted to owners only"
-            >
-              <Lock className="w-4 h-4 text-amber-400" /> Owner Login (Stock Entry)
             </button>
           )}
         </div>
@@ -210,31 +189,23 @@ export const ProductsSection: React.FC = () => {
 
       {/* Non-Owner Security Notice OR Owner Direct Stock Form */}
       {!isAdminLoggedIn ? (
-        <div className="bg-stone-900 text-white rounded-3xl p-6 sm:p-7 border border-stone-800 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
-                  Owner Access Controlled
-                </span>
-              </div>
-              <h3 className="font-extrabold text-white text-base">
-                Incoming Stock Entry &amp; Quantity Management
-              </h3>
-              <p className="text-stone-400 text-xs mt-0.5 max-w-xl">
-                No person other than the owners (Sahadevan &amp; Arun Kavinaya) can get inside for the entry of incoming stocks. Please log in with owner credentials to enter new products or replenish godown inventory.
-              </p>
-            </div>
+        <div className="bg-stone-900 text-white rounded-3xl p-6 sm:p-7 border border-stone-800 shadow-xl flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+            <Lock className="w-5 h-5" />
           </div>
-          <button
-            onClick={() => setIsLoginModalOpen(true)}
-            className="py-3 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs flex items-center justify-center gap-2 shrink-0 transition-all shadow-lg shadow-amber-950/40"
-          >
-            <Lock className="w-4 h-4" /> Owner Login to Enter Stock
-          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                Owner Access Controlled
+              </span>
+            </div>
+            <h3 className="font-extrabold text-white text-base">
+              Incoming Stock Entry &amp; Quantity Management
+            </h3>
+            <p className="text-stone-400 text-xs mt-0.5 max-w-2xl">
+              No person other than the owners (Sahadevan &amp; Arun Kavinaya) can get inside for the entry of incoming stocks. Please log in with owner credentials to enter new products or replenish godown inventory.
+            </p>
+          </div>
         </div>
       ) : isFormExpanded ? (
         <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-600/40 shadow-xl space-y-5 animate-in slide-in-from-top-4 duration-200">
@@ -496,19 +467,12 @@ export const ProductsSection: React.FC = () => {
                 <Sparkles className="w-4 h-4 text-amber-300" /> Load All Demo Stocks (INR)
               </button>
 
-              {isAdminLoggedIn ? (
+              {isAdminLoggedIn && (
                 <button
                   onClick={() => setIsFormExpanded(true)}
                   className="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" /> Enter Custom Stock
-                </button>
-              ) : (
-                <button
-                  onClick={() => setIsLoginModalOpen(true)}
-                  className="py-3 px-4 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/40 font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer"
-                >
-                  <Lock className="w-4 h-4 text-amber-400" /> Owner Login
                 </button>
               )}
             </div>
@@ -702,24 +666,26 @@ export const ProductsSection: React.FC = () => {
                       <h3 className="font-extrabold text-stone-900 text-base leading-snug">
                         {p.name}
                       </h3>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleStartEdit(p)}
-                          className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shrink-0 cursor-pointer shadow-sm"
-                          title="Edit product name, stock, rate, or packaging"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteProduct(p.id)}
-                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shrink-0 cursor-pointer shadow-sm"
-                          title="Delete product"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {isAdminLoggedIn && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEdit(p)}
+                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shrink-0 cursor-pointer shadow-sm"
+                            title="Edit product name, stock, rate, or packaging"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteProduct(p.id)}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors shrink-0 cursor-pointer shadow-sm"
+                            title="Delete product"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Rate in Indian Rupees (INR / ₹) */}
@@ -757,43 +723,49 @@ export const ProductsSection: React.FC = () => {
                       <span className="text-stone-600 font-medium">
                         Live Godown Stock:
                       </span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => addStock(p.id, -1, 'Stock deduction')}
-                          className="w-7 h-7 rounded-lg bg-white border border-stone-300 flex items-center justify-center text-stone-700 hover:bg-stone-200 active:bg-stone-300 font-bold text-xs cursor-pointer shadow-sm"
-                          title="Deduct 1 unit"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="font-mono font-black text-stone-900 px-2 py-0.5 text-sm bg-white border border-stone-200 rounded-lg">
-                          {p.currentStock}
+                      {isAdminLoggedIn ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => addStock(p.id, -1, 'Stock deduction')}
+                            className="w-7 h-7 rounded-lg bg-white border border-stone-300 flex items-center justify-center text-stone-700 hover:bg-stone-200 active:bg-stone-300 font-bold text-xs cursor-pointer shadow-sm"
+                            title="Deduct 1 unit"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="font-mono font-black text-stone-900 px-2 py-0.5 text-sm bg-white border border-stone-200 rounded-lg">
+                            {p.currentStock}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => addStock(p.id, 1, 'Quick stock arrival')}
+                            className="w-7 h-7 rounded-lg bg-white border border-stone-300 flex items-center justify-center text-stone-700 hover:bg-stone-200 active:bg-stone-300 font-bold text-xs cursor-pointer shadow-sm"
+                            title="Add 1 unit"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addStock(p.id, 10, 'Quick +10 units')}
+                            className="py-1 px-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-[10px] cursor-pointer"
+                            title="Add +10 units"
+                          >
+                            +10
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => addStock(p.id, 50, 'Batch shipment addition')}
+                            className="py-1 px-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-bold text-[10px] cursor-pointer shadow-sm"
+                            title="Add +50 units"
+                          >
+                            +50
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="font-mono font-black text-emerald-800 px-2.5 py-1 text-xs bg-emerald-100/80 border border-emerald-300 rounded-lg">
+                          {p.currentStock} Units in Godown
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => addStock(p.id, 1, 'Quick stock arrival')}
-                          className="w-7 h-7 rounded-lg bg-white border border-stone-300 flex items-center justify-center text-stone-700 hover:bg-stone-200 active:bg-stone-300 font-bold text-xs cursor-pointer shadow-sm"
-                          title="Add 1 unit"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => addStock(p.id, 10, 'Quick +10 units')}
-                          className="py-1 px-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-[10px] cursor-pointer"
-                          title="Add +10 units"
-                        >
-                          +10
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => addStock(p.id, 50, 'Batch shipment addition')}
-                          className="py-1 px-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-bold text-[10px] cursor-pointer shadow-sm"
-                          title="Add +50 units"
-                        >
-                          +50
-                        </button>
-                      </div>
+                      )}
                     </div>
 
                     {/* Direct Contact Calling Buttons */}
@@ -828,23 +800,27 @@ export const ProductsSection: React.FC = () => {
                         <MessageSquare className="w-3.5 h-3.5" /> WhatsApp Inquiry
                       </a>
 
-                      <button
-                        type="button"
-                        onClick={() => handleStartEdit(p)}
-                        className="py-1.5 px-2.5 rounded-xl text-stone-700 hover:bg-stone-100 border border-stone-200 transition-colors font-bold text-xs flex items-center gap-1 cursor-pointer"
-                        title="Edit product"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 text-emerald-700" /> Edit
-                      </button>
+                      {isAdminLoggedIn && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEdit(p)}
+                            className="py-1.5 px-2.5 rounded-xl text-stone-700 hover:bg-stone-100 border border-stone-200 transition-colors font-bold text-xs flex items-center gap-1 cursor-pointer"
+                            title="Edit product"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-emerald-700" /> Edit
+                          </button>
 
-                      <button
-                        type="button"
-                        onClick={() => deleteProduct(p.id)}
-                        className="p-1.5 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 border border-stone-200 transition-colors cursor-pointer"
-                        title="Delete product"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteProduct(p.id)}
+                            className="p-1.5 rounded-xl text-stone-400 hover:text-rose-600 hover:bg-rose-50 border border-stone-200 transition-colors cursor-pointer"
+                            title="Delete product"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

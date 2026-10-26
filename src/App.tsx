@@ -76,7 +76,7 @@ const AppContent: React.FC = () => {
         ) : (
           <button
             onClick={() => setIsLoginModalOpen(true)}
-            className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300"
+            className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 cursor-pointer"
             title="Owner Login"
           >
             <Lock className="w-4 h-4" />

@@ -217,10 +217,10 @@ export const HomeSection: React.FC = () => {
               ) : (
                 <button
                   onClick={() => setIsLoginModalOpen(true)}
-                  className="py-3 px-5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all"
+                  className="py-3 px-5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
                   title="Owner Access: Sahadevan & Arun Kavinaya only"
                 >
-                  <Lock className="w-4 h-4 text-amber-400" /> Owner Login (Stock Entry)
+                  <Lock className="w-4 h-4 text-amber-400" /> Owner Login
                 </button>
               )}
             </div>

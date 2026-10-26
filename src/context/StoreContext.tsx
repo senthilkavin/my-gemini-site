@@ -76,6 +76,8 @@ interface StoreContextType {
     note?: string
   ) => void;
   deleteSalesBill: (billId: string) => void;
+  clearAllSalesBills: () => void;
+  loadSampleBills: () => void;
   selectedBillForPrint: SalesBill | null;
   setSelectedBillForPrint: (bill: SalesBill | null) => void;
 }
@@ -123,9 +125,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           return parsed;
         }
       }
-      return INITIAL_BILLS;
+      return [];
     } catch {
-      return INITIAL_BILLS;
+      return [];
     }
   });
 
@@ -539,6 +541,22 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast('Sales bill deleted.');
   };
 
+  const clearAllSalesBills = () => {
+    setSalesBills([]);
+    localStorage.removeItem(STORAGE_KEYS.BILLS);
+    showToast('Sales register cleared. Merchant Sales reset to ₹0.');
+  };
+
+  const loadSampleBills = () => {
+    setSalesBills(INITIAL_BILLS);
+    try {
+      localStorage.setItem(STORAGE_KEYS.BILLS, JSON.stringify(INITIAL_BILLS));
+    } catch (e) {
+      console.warn('Storage sync error', e);
+    }
+    showToast('Sample bills loaded! Official tax invoices ready.');
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -570,6 +588,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         createSalesBill,
         updateBillPayment,
         deleteSalesBill,
+        clearAllSalesBills,
+        loadSampleBills,
         selectedBillForPrint,
         setSelectedBillForPrint,
       }}

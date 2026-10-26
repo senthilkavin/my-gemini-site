@@ -29,9 +29,10 @@ import {
   Sprout,
   Image as ImageIcon,
   X,
+  RotateCcw,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { Product, ProductCategory, BillItem, PaymentMode } from '../types';
+import { Product, ProductCategory, BillItem, PaymentMode, SalesBill } from '../types';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -49,6 +50,8 @@ export const AdminDashboard: React.FC = () => {
     createSalesBill,
     updateBillPayment,
     deleteSalesBill,
+    clearAllSalesBills,
+    loadSampleBills,
     stockAdjustments,
     setActiveTab,
     selectedBillForPrint,
@@ -57,6 +60,31 @@ export const AdminDashboard: React.FC = () => {
   } = useStore();
 
   const [activeAdminTab, setActiveAdminTab] = useState<'stocks' | 'bill_generator' | 'sales_history' | 'imagery'>('stocks');
+
+  // Pending Bill Confirmation state (Yes / No confirmation before money is filled in Merchant Sales)
+  const [pendingBillConfirm, setPendingBillConfirm] = useState<{
+    customerName: string;
+    customerPhone: string;
+    customerAddress: string;
+    items: BillItem[];
+    discountINR: number;
+    taxGSTPercent: number;
+    subtotalINR: number;
+    grandTotalINR: number;
+    amountPaidINR: number;
+    balanceDueINR: number;
+    paymentMode: PaymentMode;
+    paymentReference: string;
+    billedBy: string;
+    notes: string;
+  } | null>(null);
+
+  // Print Last Bill / Customer Payment Confirmation state
+  const [billForPaymentConfirm, setBillForPaymentConfirm] = useState<SalesBill | null>(null);
+
+  // Direct Godown Entry Edit & Delete state
+  const [editingDirectProduct, setEditingDirectProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   // --- DIRECT STOCKS ENTRY FORM (NO DROPDOWNS TO REPLENISH!) ---
   const [inputName, setInputName] = useState('');
@@ -164,10 +192,55 @@ export const AdminDashboard: React.FC = () => {
     },
   };
 
-  // Direct Product & Stock Addition
+  const handleStartDirectEdit = (p: Product) => {
+    setEditingDirectProduct(p);
+    setInputName(p.name);
+    setInputCategory(p.category);
+    setInputStock(p.currentStock);
+    setInputPriceINR(p.unitPriceINR > 0 ? p.unitPriceINR : '');
+    setInputPackaging(p.packagingUnit);
+    setInputBrand(p.brand);
+    setInputUsage(p.targetPestOrUsage || '');
+    setInputActiveIngredient(p.activeIngredient || '');
+
+    if (p.image === PRESET_IMAGES.ultratech.url) setInputImagePreset('ultratech');
+    else if (p.image === PRESET_IMAGES.insecticide.url) setInputImagePreset('insecticide');
+    else if (p.image === PRESET_IMAGES.weedicide.url) setInputImagePreset('weedicide');
+    else if (p.image === PRESET_IMAGES.ant.url) setInputImagePreset('ant');
+    else if (p.image === PRESET_IMAGES.rat.url) setInputImagePreset('rat');
+    else {
+      setInputImagePreset('custom');
+      setCustomImageUrl(p.image);
+    }
+
+    showToast(`Loaded "${p.name}" in Direct Godown Entry for editing.`);
+    const el = document.getElementById('direct-godown-entry-card');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleCancelDirectEdit = () => {
+    setEditingDirectProduct(null);
+    setInputName('');
+    setInputCategory('cement');
+    setInputStock('');
+    setInputPriceINR('');
+    setInputPackaging('');
+    setInputBrand('UltraTech / Dalmia');
+    setInputImagePreset('ultratech');
+    setCustomImageUrl('');
+    setInputActiveIngredient('');
+    setInputUsage('');
+  };
+
+  // Direct Product & Stock Addition / Editing
   const handleDirectAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputName.trim()) return;
+    if (!inputName.trim()) {
+      showToast('Please enter a product name');
+      return;
+    }
 
     let chosenImg = PRESET_IMAGES[inputCategory === 'cement' ? 'ultratech' : inputCategory === 'weedicide' ? 'weedicide' : inputCategory === 'insecticide' ? 'insecticide' : inputCategory === 'ant_poison' ? 'ant' : 'rat']?.url;
     if (inputImagePreset === 'custom' && customImageUrl.trim()) {
@@ -177,28 +250,40 @@ export const AdminDashboard: React.FC = () => {
     }
 
     const priceNum = typeof inputPriceINR === 'number' ? inputPriceINR : 0;
+    const stockNum = typeof inputStock === 'number' ? inputStock : 0;
 
-    addNewProduct({
-      name: inputName.trim(),
-      category: inputCategory,
-      currentStock: Number(inputStock) || 0,
-      unitPriceINR: priceNum,
-      priceEstimated: priceNum > 0 ? `₹${priceNum} (INR)` : 'Rate on Request',
-      packagingUnit: inputPackaging.trim() || (inputCategory === 'cement' ? '50 kg Bag' : 'Unit Pack'),
-      brand: inputBrand.trim() || (inputCategory === 'cement' ? 'UltraTech Cement' : 'GokulaKrishnan Verified'),
-      activeIngredient: inputActiveIngredient.trim() || (inputCategory === 'cement' ? 'IS 12269 Ordinary Portland Clinker 95%' : 'Standard Chemical Specification'),
-      targetPestOrUsage: inputUsage.trim() || (inputCategory === 'cement' ? 'Civil Construction & Structural Masonry' : 'Agricultural Protection'),
-      safetyHazard: inputCategory === 'cement' ? 'Alkaline powder.' : 'Follow manufacturer safety instructions.',
-      image: chosenImg,
-    });
-
-    // Reset inputs
-    setInputName('');
-    setInputStock('');
-    setInputPriceINR('');
-    setInputPackaging('');
-    setInputActiveIngredient('');
-    setInputUsage('');
+    if (editingDirectProduct) {
+      updateProduct(editingDirectProduct.id, {
+        name: inputName.trim(),
+        category: inputCategory,
+        currentStock: stockNum,
+        unitPriceINR: priceNum,
+        priceEstimated: priceNum > 0 ? `₹${priceNum} (INR)` : 'Rate on Request',
+        packagingUnit: inputPackaging.trim() || (inputCategory === 'cement' ? '50 kg Bag' : 'Unit Pack'),
+        brand: inputBrand.trim() || (inputCategory === 'cement' ? 'UltraTech Cement' : 'GokulaKrishnan Verified'),
+        activeIngredient: inputActiveIngredient.trim() || editingDirectProduct.activeIngredient,
+        targetPestOrUsage: inputUsage.trim() || editingDirectProduct.targetPestOrUsage,
+        image: chosenImg,
+      });
+      showToast(`Product "${inputName.trim()}" updated successfully in Godown!`);
+      handleCancelDirectEdit();
+    } else {
+      addNewProduct({
+        name: inputName.trim(),
+        category: inputCategory,
+        currentStock: stockNum,
+        unitPriceINR: priceNum,
+        priceEstimated: priceNum > 0 ? `₹${priceNum} (INR)` : 'Rate on Request',
+        packagingUnit: inputPackaging.trim() || (inputCategory === 'cement' ? '50 kg Bag' : 'Unit Pack'),
+        brand: inputBrand.trim() || (inputCategory === 'cement' ? 'UltraTech Cement' : 'GokulaKrishnan Verified'),
+        activeIngredient: inputActiveIngredient.trim() || (inputCategory === 'cement' ? 'IS 12269 Ordinary Portland Clinker 95%' : 'Standard Chemical Specification'),
+        targetPestOrUsage: inputUsage.trim() || (inputCategory === 'cement' ? 'Civil Construction & Structural Masonry' : 'Agricultural Protection'),
+        safetyHazard: inputCategory === 'cement' ? 'Alkaline powder.' : 'Follow manufacturer safety instructions.',
+        image: chosenImg,
+      });
+      showToast(`Product "${inputName.trim()}" added to Godown with ${stockNum} units!`);
+      handleCancelDirectEdit();
+    }
   };
 
   // --- Bill Generator Functions ---
@@ -276,24 +361,51 @@ export const AdminDashboard: React.FC = () => {
 
     const paidNum =
       typeof amountPaidINR === 'number'
-        ? amountPaidINR
+        ? Math.max(0, amountPaidINR)
         : billGrandTotal; // Default to full payment if left blank
 
-    const newBill = createSalesBill({
-      customerName,
+    const balanceDue = Math.max(0, billGrandTotal - paidNum);
+
+    // Open confirmation modal: Prompt user with Yes or No before recording sales & generating bill
+    setPendingBillConfirm({
+      customerName: customerName.trim(),
       customerPhone: customerPhone.trim() || 'N/A',
-      customerAddress,
+      customerAddress: customerAddress.trim(),
       items: billItems,
       discountINR,
       taxGSTPercent,
+      subtotalINR: billSubtotal,
+      grandTotalINR: billGrandTotal,
       amountPaidINR: paidNum,
+      balanceDueINR: balanceDue,
       paymentMode,
-      paymentReference: paymentRef,
+      paymentReference: paymentRef.trim(),
       billedBy: billedByPartner,
-      notes: billNotes,
+      notes: billNotes.trim(),
+    });
+  };
+
+  const handleConfirmBillGenerationYes = () => {
+    if (!pendingBillConfirm) return;
+
+    // NOW and ONLY now after explicit "Yes" confirmation is the bill generated and money recorded in Merchant Sales
+    const newBill = createSalesBill({
+      customerName: pendingBillConfirm.customerName,
+      customerPhone: pendingBillConfirm.customerPhone,
+      customerAddress: pendingBillConfirm.customerAddress,
+      items: pendingBillConfirm.items,
+      discountINR: pendingBillConfirm.discountINR,
+      taxGSTPercent: pendingBillConfirm.taxGSTPercent,
+      amountPaidINR: pendingBillConfirm.amountPaidINR,
+      paymentMode: pendingBillConfirm.paymentMode,
+      paymentReference: pendingBillConfirm.paymentReference,
+      billedBy: pendingBillConfirm.billedBy,
+      notes: pendingBillConfirm.notes,
     });
 
-    // Reset bill generator
+    const recordedMoney = pendingBillConfirm.amountPaidINR;
+
+    // Reset bill generator form
     setCustomerName('');
     setCustomerPhone('');
     setCustomerAddress('');
@@ -304,8 +416,58 @@ export const AdminDashboard: React.FC = () => {
     setPaymentRef('');
     setBillNotes('');
 
-    // Open print view
+    setPendingBillConfirm(null);
+
+    // Open printable tax invoice modal
     setSelectedBillForPrint(newBill);
+
+    showToast(`✓ Confirmed! Bill #${newBill.billNumber} created & ₹${recordedMoney.toLocaleString('en-IN')} filled in Merchant Sales.`);
+  };
+
+  const handleConfirmBillGenerationNo = () => {
+    setPendingBillConfirm(null);
+    showToast('Bill generation cancelled. No changes made to Merchant Sales.');
+  };
+
+  // Trigger Print Last Bill with Customer Payment Confirmation
+  const handleTriggerPrintLastBill = () => {
+    if (salesBills.length === 0) {
+      showToast('No sales bills recorded yet. Create a bill first.');
+      return;
+    }
+    setBillForPaymentConfirm(salesBills[0]);
+  };
+
+  const handleConfirmCustomerPaymentYes = () => {
+    if (!billForPaymentConfirm) return;
+    const targetBill = billForPaymentConfirm;
+    const fullAmount = targetBill.grandTotalINR;
+    const amountToCredit = Math.max(0, fullAmount - targetBill.amountPaidINR);
+
+    if (amountToCredit > 0) {
+      updateBillPayment(
+        targetBill.id,
+        amountToCredit,
+        targetBill.paymentMode || 'cash',
+        'Customer confirmed ready for payment during bill print'
+      );
+    }
+
+    const updatedBillForPrint: SalesBill = {
+      ...targetBill,
+      amountPaidINR: fullAmount,
+      balanceDueINR: 0,
+      paymentStatus: 'paid',
+    };
+
+    setBillForPaymentConfirm(null);
+    setSelectedBillForPrint(updatedBillForPrint);
+    showToast(`✓ Confirmed! Customer payment of ₹${fullAmount.toLocaleString('en-IN')} filled in Merchant Sales.`);
+  };
+
+  const handleConfirmCustomerPaymentNo = () => {
+    setBillForPaymentConfirm(null);
+    showToast('Payment not confirmed. Merchant Sales was not filled.');
   };
 
   // Revenue Metrics
@@ -360,7 +522,7 @@ export const AdminDashboard: React.FC = () => {
 
           {salesBills.length > 0 && (
             <button
-              onClick={() => setSelectedBillForPrint(salesBills[0])}
+              onClick={handleTriggerPrintLastBill}
               className="py-2.5 px-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white border border-stone-700 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow transition-all cursor-pointer"
               title="Print the most recent sales bill"
             >
@@ -574,19 +736,89 @@ export const AdminDashboard: React.FC = () => {
       {activeAdminTab === 'stocks' && (
         <div className="space-y-8">
           {/* Direct Stock Form */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-600/50 shadow-xl space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 pb-3">
+          <div
+            id="direct-godown-entry-card"
+            className={`bg-white rounded-3xl p-6 sm:p-8 border-2 shadow-xl space-y-5 transition-all ${
+              editingDirectProduct
+                ? 'border-amber-500 ring-4 ring-amber-400/20'
+                : 'border-emerald-600/50'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-4">
               <div>
-                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest block">
-                  Direct Godown Entry
-                </span>
-                <h3 className="text-xl font-extrabold text-stone-900 mt-0.5">
-                  Enter New Product Name &amp; Initial Stock
-                </h3>
+                {editingDirectProduct ? (
+                  <>
+                    <span className="text-[10px] font-black text-amber-900 bg-amber-100 border border-amber-300 uppercase tracking-widest px-2.5 py-0.5 rounded-full inline-block">
+                      Direct Godown Entry • Edit Mode
+                    </span>
+                    <h3 className="text-xl font-extrabold text-stone-900 mt-1">
+                      Edit Product &amp; Stock: <span className="text-emerald-800">{editingDirectProduct.name}</span>
+                    </h3>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      Update details, rates, or stocks. You can also delete this product directly below.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest block">
+                      Direct Godown Entry
+                    </span>
+                    <h3 className="text-xl font-extrabold text-stone-900 mt-0.5">
+                      Enter New Product Name &amp; Initial Stock
+                    </h3>
+                    <p className="text-xs text-stone-500 mt-0.5 font-mono">
+                      Direct entry into live godown database • Select below to edit or delete existing items
+                    </p>
+                  </>
+                )}
               </div>
-              <span className="text-xs text-stone-500 font-mono">
-                No dropdown required • Direct entry into live database
-              </span>
+
+              {/* Quick Edit / Delete Selector for Direct Godown Entry */}
+              <div className="flex flex-wrap items-center gap-2">
+                {editingDirectProduct ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCancelDirectEdit}
+                      className="py-1.5 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold border border-stone-300 flex items-center gap-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5 text-stone-500" /> Cancel Edit &amp; Add New
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProductToDelete(editingDirectProduct)}
+                      className="py-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-300 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" /> Delete Product
+                    </button>
+                  </div>
+                ) : (
+                  products.length > 0 && (
+                    <div className="flex items-center gap-1.5 bg-stone-50 px-3 py-1.5 rounded-xl border border-stone-200">
+                      <Edit3 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <label htmlFor="quick-edit-select" className="text-[11px] font-bold text-stone-700 whitespace-nowrap">
+                        Edit / Delete:
+                      </label>
+                      <select
+                        id="quick-edit-select"
+                        value=""
+                        onChange={(e) => {
+                          const found = products.find((p) => p.id === e.target.value);
+                          if (found) handleStartDirectEdit(found);
+                        }}
+                        className="bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-semibold text-stone-800 cursor-pointer"
+                      >
+                        <option value="">-- Choose Godown Item to Edit/Delete --</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({p.currentStock} in stock • ₹{p.unitPriceINR})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )
+                )}
+              </div>
             </div>
 
             <form onSubmit={handleDirectAddProduct} className="space-y-4 text-xs">
@@ -724,16 +956,47 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               )}
 
-              <div className="pt-2 flex justify-between items-center">
+              <div className="pt-3 border-t border-stone-200/80 flex flex-col sm:flex-row justify-between items-center gap-3">
                 <span className="text-[11px] text-stone-500 font-mono">
                   All transactions and stock values logged in Indian Rupee (INR / ₹).
                 </span>
-                <button
-                  type="submit"
-                  className="py-3 px-8 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-extrabold text-sm shadow-lg shadow-emerald-900/30 flex items-center gap-2 transition-all"
-                >
-                  <PlusCircle className="w-4 h-4" /> Save Product &amp; Add Stock to Godown
-                </button>
+
+                {editingDirectProduct ? (
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setProductToDelete(editingDirectProduct)}
+                      className="py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Permanently delete this product from Godown"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Product</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCancelDirectEdit}
+                      className="py-2.5 px-4 rounded-xl text-stone-600 hover:bg-stone-100 font-bold text-xs border border-stone-300 transition-colors cursor-pointer"
+                    >
+                      Cancel Edit
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="py-2.5 px-6 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-black text-xs sm:text-sm shadow-md shadow-emerald-950/20 flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                      <span>Save Product Changes (INR)</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    className="py-3 px-8 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-extrabold text-sm shadow-lg shadow-emerald-900/30 flex items-center gap-2 transition-all cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4" /> Save Product &amp; Add Stock to Godown
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -876,29 +1139,14 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-2.5 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => handleAddProductToBill(p)}
-                              className="p-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-[10px] flex items-center gap-1"
-                              title="Add item to active sales bill"
-                            >
-                              <Receipt className="w-3 h-3" /> Bill
-                            </button>
+                          <div className="flex items-center justify-end">
                             <button
                               type="button"
-                              onClick={() => handleOpenEditProduct(p)}
-                              className="p-1.5 text-stone-600 hover:text-emerald-700 hover:bg-emerald-50 border border-stone-200 rounded-lg transition-colors cursor-pointer"
-                              title="Edit product name, stock, rate, or category"
+                              onClick={() => handleStartDirectEdit(p)}
+                              className="py-1 px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                              title="Edit product name, stock, rate, or packaging in Direct Godown Entry"
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => deleteProduct(p.id)}
-                              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 border border-stone-200 rounded-lg transition-colors cursor-pointer"
-                              title="Delete product"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Edit3 className="w-3 h-3 text-emerald-700" /> Edit
                             </button>
                           </div>
                         </td>
@@ -1325,8 +1573,29 @@ export const AdminDashboard: React.FC = () => {
                 Sales Register &amp; Money Received in INR
               </h3>
             </div>
-            <div className="font-mono text-xs bg-emerald-50 text-emerald-900 px-3 py-1.5 rounded-xl border border-emerald-200 font-bold">
-              Total Revenue: ₹{totalSalesRevenueINR.toLocaleString('en-IN')}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="font-mono text-xs bg-emerald-50 text-emerald-900 px-3 py-1.5 rounded-xl border border-emerald-200 font-bold">
+                Merchant Sales: ₹{totalSalesRevenueINR.toLocaleString('en-IN')}
+              </div>
+              {salesBills.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={clearAllSalesBills}
+                  className="py-1.5 px-3 rounded-xl bg-stone-100 hover:bg-rose-50 text-stone-600 hover:text-rose-700 border border-stone-300 hover:border-rose-300 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                  title="Clear all recorded sales bills and reset Merchant Sales back to ₹0"
+                >
+                  <RotateCcw className="w-3 h-3" /> Reset Sales (₹0)
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={loadSampleBills}
+                  className="py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                  title="Load sample sales receipts for testing"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-600" /> Load Sample Bills
+                </button>
+              )}
             </div>
           </div>
 
@@ -1411,7 +1680,7 @@ export const AdminDashboard: React.FC = () => {
                       <td className="py-2.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => setSelectedBillForPrint(b)}
+                            onClick={() => setBillForPaymentConfirm(b)}
                             className="py-1 px-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-extrabold text-[11px] flex items-center gap-1 shadow-sm transition-colors cursor-pointer"
                             title="Print / View Official Tax Invoice"
                           >
@@ -1701,6 +1970,305 @@ export const AdminDashboard: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* CONFIRMATION MODAL: YES / NO FOR BILL & MERCHANT SALES */}
+      {/* ========================================================= */}
+      {pendingBillConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border-2 border-emerald-600 space-y-5 animate-in zoom-in-95 text-stone-900">
+            {/* Header */}
+            <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 shrink-0">
+                  <Receipt className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 block">
+                    Sales Confirmation
+                  </span>
+                  <h3 className="text-xl font-extrabold text-stone-900 font-serif">
+                    Record Money in Merchant Sales?
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleConfirmBillGenerationNo}
+                className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-100 cursor-pointer"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Bill Details Summary */}
+            <div className="bg-stone-50 rounded-2xl border border-stone-200 p-4 space-y-2.5 text-xs">
+              <div className="flex justify-between items-center text-stone-700">
+                <span>Customer Name:</span>
+                <strong className="text-stone-900 font-bold text-sm">
+                  {pendingBillConfirm.customerName}
+                </strong>
+              </div>
+              <div className="flex justify-between items-center text-stone-600 font-mono">
+                <span>Phone:</span>
+                <span>{pendingBillConfirm.customerPhone}</span>
+              </div>
+              {pendingBillConfirm.customerAddress && (
+                <div className="flex justify-between items-center text-stone-600">
+                  <span>Location / Site:</span>
+                  <span className="text-right text-stone-700 font-medium">{pendingBillConfirm.customerAddress}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-start text-stone-600 border-t border-stone-200 pt-2">
+                <span>Items ({pendingBillConfirm.items.length}):</span>
+                <div className="text-right max-w-xs font-semibold text-stone-900">
+                  {pendingBillConfirm.items.map((i) => `${i.productName} (${i.quantity})`).join(', ')}
+                </div>
+              </div>
+              <div className="flex justify-between items-center border-t border-stone-200 pt-2 text-stone-700">
+                <span>Total Bill Value:</span>
+                <span className="font-mono font-bold text-stone-900 text-sm">
+                  ₹{pendingBillConfirm.grandTotalINR.toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              {/* HIGHLIGHT: EXACT AMOUNT TO FILL IN SALES */}
+              <div className="bg-emerald-100/90 border-2 border-emerald-600 rounded-xl p-3.5 flex justify-between items-center text-emerald-950 font-bold">
+                <div>
+                  <span className="block text-[10px] uppercase font-black tracking-wider text-emerald-800">
+                    Money to fill in Merchant Sales (INR):
+                  </span>
+                  <span className="text-xl font-black font-mono text-emerald-900">
+                    ₹{pendingBillConfirm.amountPaidINR.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <span className="bg-emerald-700 text-white text-[11px] font-bold px-3 py-1 rounded-lg uppercase tracking-wide">
+                  {pendingBillConfirm.paymentMode.replace('_', ' ')}
+                </span>
+              </div>
+
+              {pendingBillConfirm.balanceDueINR > 0 && (
+                <div className="flex justify-between items-center text-rose-700 font-bold">
+                  <span>Outstanding Customer Balance (Credit Due):</span>
+                  <span className="font-mono font-bold">₹{pendingBillConfirm.balanceDueINR.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Prompt with clear explanation */}
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-950 space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                Confirmation Required (Yes / No):
+              </p>
+              <p className="text-[11px] text-amber-900 leading-relaxed">
+                Money will be filled into <strong>Merchant Sales Collected</strong> only after your confirmation. Stock will also be deducted from the Godown database.
+              </p>
+            </div>
+
+            {/* Yes / No Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleConfirmBillGenerationNo}
+                className="w-full sm:w-auto py-3 px-5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs flex items-center justify-center gap-2 border border-stone-300 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4 text-rose-600" />
+                <span>No, Cancel &amp; Review</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmBillGenerationYes}
+                className="w-full sm:w-auto py-3 px-6 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                <span>Yes, Confirm Bill &amp; Add ₹{pendingBillConfirm.amountPaidINR.toLocaleString('en-IN')} to Sales</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* CONFIRMATION MODAL: IS CUSTOMER READY FOR PAYMENT (PRINT BILL) */}
+      {/* ========================================================= */}
+      {billForPaymentConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border-2 border-emerald-600 space-y-5 animate-in zoom-in-95 text-stone-900">
+            {/* Header */}
+            <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 shrink-0">
+                  <Printer className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 block">
+                    Customer Payment Confirmation
+                  </span>
+                  <h3 className="text-xl font-extrabold text-stone-900 font-serif">
+                    Is customer ready for payment to be done?
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleConfirmCustomerPaymentNo}
+                className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg hover:bg-stone-100 cursor-pointer"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Bill Summary */}
+            <div className="bg-stone-50 rounded-2xl border border-stone-200 p-4 space-y-2.5 text-xs">
+              <div className="flex justify-between items-center text-stone-700">
+                <span>Bill Number:</span>
+                <strong className="text-stone-900 font-mono font-bold text-sm">
+                  #{billForPaymentConfirm.billNumber}
+                </strong>
+              </div>
+              <div className="flex justify-between items-center text-stone-700">
+                <span>Customer Name:</span>
+                <strong className="text-stone-900 font-bold">
+                  {billForPaymentConfirm.customerName}
+                </strong>
+              </div>
+              <div className="flex justify-between items-center text-stone-600 font-mono">
+                <span>Customer Phone:</span>
+                <span>{billForPaymentConfirm.customerPhone}</span>
+              </div>
+              <div className="flex justify-between items-start text-stone-600 border-t border-stone-200 pt-2">
+                <span>Items Billed:</span>
+                <div className="text-right max-w-xs font-semibold text-stone-900">
+                  {billForPaymentConfirm.items.map((i: BillItem) => `${i.productName} (${i.quantity})`).join(', ')}
+                </div>
+              </div>
+              <div className="flex justify-between items-center border-t border-stone-200 pt-2 text-stone-700">
+                <span>Total Bill Value (INR):</span>
+                <span className="font-mono font-black text-stone-900 text-sm">
+                  ₹{billForPaymentConfirm.grandTotalINR.toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              {/* HIGHLIGHT: EXACT AMOUNT TO FILL IN SALES */}
+              <div className="bg-emerald-100/90 border-2 border-emerald-600 rounded-xl p-3.5 flex justify-between items-center text-emerald-950 font-bold">
+                <div>
+                  <span className="block text-[10px] uppercase font-black tracking-wider text-emerald-800">
+                    Money to fill in Merchant Sales (INR):
+                  </span>
+                  <span className="text-xl font-black font-mono text-emerald-900">
+                    ₹{billForPaymentConfirm.grandTotalINR.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <span className="bg-emerald-700 text-white text-[11px] font-bold px-3 py-1 rounded-lg uppercase tracking-wide">
+                  {billForPaymentConfirm.paymentMode.replace('_', ' ')}
+                </span>
+              </div>
+            </div>
+
+            {/* Prompt explanation */}
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-950 space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-amber-900">
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                Confirmation: Ready for Payment? (Yes / No)
+              </p>
+              <p className="text-[11px] text-amber-900 leading-relaxed">
+                Only after your confirmation that the customer is ready for payment will the money be filled into <strong>Merchant Sales Collected (INR)</strong> and the bill will be printed.
+              </p>
+            </div>
+
+            {/* Yes / No Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleConfirmCustomerPaymentNo}
+                className="w-full sm:w-auto py-3 px-5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs flex items-center justify-center gap-2 border border-stone-300 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4 text-rose-600" />
+                <span>No, Customer Not Ready</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmCustomerPaymentYes}
+                className="w-full sm:w-auto py-3 px-6 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/30 transition-all cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                <span>Yes, Customer is Ready (Fill ₹{billForPaymentConfirm.grandTotalINR.toLocaleString('en-IN')} to Sales &amp; Print)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* DELETE PRODUCT FROM GODOWN CONFIRMATION MODAL */}
+      {/* ========================================================= */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-2 border-rose-500 space-y-4 animate-in zoom-in-95 text-stone-900">
+            <div className="flex items-center gap-2.5 border-b border-stone-200 pb-3">
+              <div className="w-9 h-9 rounded-xl bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-700 shrink-0">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-rose-700 block">
+                  Direct Godown Entry
+                </span>
+                <h3 className="font-extrabold text-stone-900 text-lg">
+                  Delete Product from Godown?
+                </h3>
+              </div>
+            </div>
+
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex items-center gap-3">
+                <img
+                  src={productToDelete.image}
+                  alt={productToDelete.name}
+                  className="w-12 h-12 rounded-xl object-cover border border-rose-200 shadow-sm"
+                />
+                <div>
+                  <strong className="text-stone-900 font-bold block text-sm">{productToDelete.name}</strong>
+                  <span className="text-stone-500 font-mono text-[11px]">
+                    Current Stock: {productToDelete.currentStock} {productToDelete.packagingUnit}
+                  </span>
+                </div>
+              </div>
+              <p className="text-rose-900 font-medium pt-2 border-t border-rose-200 text-[11px]">
+                Are you sure you want to delete this commodity? It will be removed from godown stock totals and product listings.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="py-2.5 px-4 rounded-xl text-stone-600 hover:bg-stone-100 font-bold text-xs border border-stone-300 transition-colors cursor-pointer"
+              >
+                No, Keep Product
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteProduct(productToDelete.id);
+                  if (editingDirectProduct?.id === productToDelete.id) {
+                    handleCancelDirectEdit();
+                  }
+                  setProductToDelete(null);
+                }}
+                className="py-2.5 px-5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-black text-xs shadow-md shadow-rose-950/30 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Yes, Delete from Godown</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

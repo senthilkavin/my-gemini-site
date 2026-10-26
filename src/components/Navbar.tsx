@@ -9,11 +9,7 @@ import {
   PhoneCall,
   Info,
   Lock,
-  UserCheck,
-  Receipt,
-  PlusCircle,
   LayoutDashboard,
-  Printer,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
@@ -26,8 +22,6 @@ export const Navbar: React.FC = () => {
     currentAdmin,
     adminLogout,
     products,
-    salesBills,
-    setSelectedBillForPrint,
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -137,22 +131,6 @@ export const Navbar: React.FC = () => {
               );
             })}
 
-            {/* Quick Print Bill Action */}
-            <button
-              onClick={() => {
-                if (salesBills.length > 0) {
-                  setSelectedBillForPrint(salesBills[0]);
-                } else {
-                  setActiveTab('admin');
-                }
-              }}
-              className="ml-1 px-3 py-2 rounded-xl text-xs font-black bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white shadow-md shadow-emerald-950/40 flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Print latest official tax bill / sales receipt (INR)"
-            >
-              <Printer className="w-3.5 h-3.5 text-amber-300" />
-              <span>Print Bill</span>
-            </button>
-
             {/* Owner Login / Logout Button */}
             {isAdminLoggedIn ? (
               <div className="flex items-center gap-2 ml-2 pl-2 border-l border-stone-800">
@@ -161,7 +139,7 @@ export const Navbar: React.FC = () => {
                 </span>
                 <button
                   onClick={adminLogout}
-                  className="px-3 py-2 rounded-xl text-xs font-bold bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-700 transition-colors"
+                  className="px-3 py-2 rounded-xl text-xs font-bold bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-700 transition-colors cursor-pointer"
                 >
                   Log Out
                 </button>
@@ -169,31 +147,17 @@ export const Navbar: React.FC = () => {
             ) : (
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="ml-2 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-sm transition-all"
+                className="ml-2 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
                 title="Admin login for owners Sahadevan & Arun Kavinaya"
               >
                 <Lock className="w-3.5 h-3.5 text-amber-400" />
-                Owner / Admin Login
+                Owner Login
               </button>
             )}
           </nav>
 
           {/* Mobile Right Action Bar */}
           <div className="flex items-center gap-2 lg:hidden">
-            <button
-              onClick={() => {
-                if (salesBills.length > 0) {
-                  setSelectedBillForPrint(salesBills[0]);
-                } else {
-                  setActiveTab('admin');
-                }
-              }}
-              className="py-1.5 px-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold flex items-center gap-1 shadow cursor-pointer"
-              title="Print Bill"
-            >
-              <Printer className="w-3.5 h-3.5 text-amber-300" /> Print
-            </button>
-
             {isAdminLoggedIn ? (
               <button
                 onClick={() => setActiveTab('admin')}
@@ -208,9 +172,10 @@ export const Navbar: React.FC = () => {
             ) : (
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="py-1.5 px-2.5 rounded-xl bg-stone-800 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1"
+                className="py-1.5 px-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Owner login"
               >
-                <Lock className="w-3.5 h-3.5" /> Owner
+                <Lock className="w-3.5 h-3.5 text-amber-400" /> Owner Login
               </button>
             )}
 
@@ -251,32 +216,13 @@ export const Navbar: React.FC = () => {
             })}
 
             <div className="pt-2 border-t border-stone-800 space-y-2">
-              <button
-                onClick={() => {
-                  if (salesBills.length > 0) {
-                    setSelectedBillForPrint(salesBills[0]);
-                  } else {
-                    setActiveTab('admin');
-                  }
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-extrabold text-xs flex items-center justify-between shadow cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <Printer className="w-4 h-4 text-amber-300" /> Print Official Bill (INR)
-                </span>
-                <span className="text-[10px] bg-emerald-900/80 px-2 py-0.5 rounded text-emerald-200 font-mono">
-                  #{salesBills[0]?.billNumber || 'New'}
-                </span>
-              </button>
-
               {isAdminLoggedIn ? (
                 <button
                   onClick={() => {
                     adminLogout();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-stone-800 text-stone-300 font-bold text-xs text-left"
+                  className="w-full py-2.5 px-4 rounded-xl bg-stone-800 text-stone-300 font-bold text-xs text-left cursor-pointer"
                 >
                   Log Out ({currentAdmin?.name})
                 </button>
@@ -286,12 +232,14 @@ export const Navbar: React.FC = () => {
                     setIsLoginModalOpen(true);
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-xs flex items-center justify-between"
+                  className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs flex items-center justify-between shadow cursor-pointer transition-all"
                 >
                   <span className="flex items-center gap-2">
-                    <Lock className="w-4 h-4" /> Owner / Admin Login
+                    <Lock className="w-4 h-4" /> Owner Login
                   </span>
-                  <span className="text-[10px] text-amber-400">Sahadevan / Arun</span>
+                  <span className="text-[10px] bg-stone-900/20 px-2 py-0.5 rounded font-mono font-bold">
+                    Sahadevan / Arun
+                  </span>
                 </button>
               )}
 
