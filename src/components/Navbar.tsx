@@ -7,9 +7,13 @@ import {
   X,
   ShieldCheck,
   PhoneCall,
+  Info,
   Lock,
   UserCheck,
+  Receipt,
+  PlusCircle,
   LayoutDashboard,
+  Printer,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
@@ -22,6 +26,8 @@ export const Navbar: React.FC = () => {
     currentAdmin,
     adminLogout,
     products,
+    salesBills,
+    setSelectedBillForPrint,
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -131,6 +137,22 @@ export const Navbar: React.FC = () => {
               );
             })}
 
+            {/* Quick Print Bill Action */}
+            <button
+              onClick={() => {
+                if (salesBills.length > 0) {
+                  setSelectedBillForPrint(salesBills[0]);
+                } else {
+                  setActiveTab('admin');
+                }
+              }}
+              className="ml-1 px-3 py-2 rounded-xl text-xs font-black bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white shadow-md shadow-emerald-950/40 flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Print latest official tax bill / sales receipt (INR)"
+            >
+              <Printer className="w-3.5 h-3.5 text-amber-300" />
+              <span>Print Bill</span>
+            </button>
+
             {/* Owner Login / Logout Button */}
             {isAdminLoggedIn ? (
               <div className="flex items-center gap-2 ml-2 pl-2 border-l border-stone-800">
@@ -158,16 +180,146 @@ export const Navbar: React.FC = () => {
 
           {/* Mobile Right Action Bar */}
           <div className="flex items-center gap-2 lg:hidden">
+            <button
+              onClick={() => {
+                if (salesBills.length > 0) {
+                  setSelectedBillForPrint(salesBills[0]);
+                } else {
+                  setActiveTab('admin');
+                }
+              }}
+              className="py-1.5 px-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold flex items-center gap-1 shadow cursor-pointer"
+              title="Print Bill"
+            >
+              <Printer className="w-3.5 h-3.5 text-amber-300" /> Print
+            </button>
+
             {isAdminLoggedIn ? (
               <button
                 onClick={() => setActiveTab('admin')}
-                className="py-1.5 px-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-700 text-xs font-bold"
+                className={`py-1.5 px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 ${
+                  activeTab === 'admin'
+                    ? 'bg-amber-500 text-stone-950'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                }`}
               >
-                Dashboard
+                <LayoutDashboard className="w-3.5 h-3.5" /> Dashboard
               </button>
-            ) : null}
+            ) : (
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="py-1.5 px-2.5 rounded-xl bg-stone-800 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1"
+              >
+                <Lock className="w-3.5 h-3.5" /> Owner
+              </button>
+            )}
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-xl bg-stone-800 text-stone-300 hover:text-white"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden py-4 border-t border-stone-800 space-y-2 animate-in slide-in-from-top-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3 ${
+                    isActive
+                      ? item.adminOnly
+                        ? 'bg-amber-500 text-stone-950'
+                        : 'bg-emerald-600 text-white'
+                      : 'text-stone-300 hover:bg-stone-800'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              );
+            })}
+
+            <div className="pt-2 border-t border-stone-800 space-y-2">
+              <button
+                onClick={() => {
+                  if (salesBills.length > 0) {
+                    setSelectedBillForPrint(salesBills[0]);
+                  } else {
+                    setActiveTab('admin');
+                  }
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-extrabold text-xs flex items-center justify-between shadow cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-amber-300" /> Print Official Bill (INR)
+                </span>
+                <span className="text-[10px] bg-emerald-900/80 px-2 py-0.5 rounded text-emerald-200 font-mono">
+                  #{salesBills[0]?.billNumber || 'New'}
+                </span>
+              </button>
+
+              {isAdminLoggedIn ? (
+                <button
+                  onClick={() => {
+                    adminLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-stone-800 text-stone-300 font-bold text-xs text-left"
+                >
+                  Log Out ({currentAdmin?.name})
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsLoginModalOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-xs flex items-center justify-between"
+                >
+                  <span className="flex items-center gap-2">
+                    <Lock className="w-4 h-4" /> Owner / Admin Login
+                  </span>
+                  <span className="text-[10px] text-amber-400">Sahadevan / Arun</span>
+                </button>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+                <a
+                  href="tel:+919486426294"
+                  className="p-2 rounded-xl bg-emerald-900/60 text-white font-mono flex items-center gap-1.5"
+                >
+                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  <div>
+                    <span className="text-[9px] text-emerald-300 block">Sahadevan</span>
+                    <span className="font-bold text-[11px]">+91 94864 26294</span>
+                  </div>
+                </a>
+                <a
+                  href="tel:+919790974822"
+                  className="p-2 rounded-xl bg-emerald-900/60 text-white font-mono flex items-center gap-1.5"
+                >
+                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  <div>
+                    <span className="text-[9px] text-emerald-300 block">Arun Kavinaya</span>
+                    <span className="font-bold text-[11px]">+91 97909 74822</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
