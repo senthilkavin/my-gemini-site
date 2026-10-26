@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default fallback deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health / connectivity check
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Live products inventory
+    match /products/{productId} {
+      allow read, write: if true;
+    }
+
+    // Official sales bills & tax invoices
+    match /sales_bills/{billId} {
+      allow read, write: if true;
+    }
+
+    // Godown stock additions log
+    match /stock_adjustments/{adjustmentId} {
+      allow read, write: if true;
+    }
+  }
+}

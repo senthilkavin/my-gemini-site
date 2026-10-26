@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Inventory product item for GokulaKrishnan Agencies",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "brand": { "type": "string" },
+        "packagingUnit": { "type": "string" },
+        "currentStock": { "type": "number" },
+        "stockStatus": { "type": "string" },
+        "unitPriceINR": { "type": "number" },
+        "priceEstimated": { "type": "string" },
+        "description": { "type": "string" },
+        "activeIngredient": { "type": "string" },
+        "targetPestOrUsage": { "type": "string" },
+        "safetyHazard": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "currentStock", "unitPriceINR"]
+    },
+    "SalesBill": {
+      "title": "SalesBill",
+      "description": "Sales invoice and payment receipt",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "billNumber": { "type": "string" },
+        "date": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "grandTotalINR": { "type": "number" },
+        "amountPaidINR": { "type": "number" },
+        "balanceDueINR": { "type": "number" },
+        "paymentMode": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "billedBy": { "type": "string" }
+      },
+      "required": ["id", "billNumber", "customerName", "grandTotalINR", "amountPaidINR"]
+    },
+    "StockAdjustment": {
+      "title": "StockAdjustment",
+      "description": "Incoming stock godown adjustment audit log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "quantityAdded": { "type": "number" },
+        "newStock": { "type": "number" },
+        "date": { "type": "string" },
+        "note": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["id", "productId", "quantityAdded", "newStock"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Live product catalog and stock levels"
+    },
+    "/sales_bills/{billId}": {
+      "schema": "SalesBill",
+      "description": "Sales bills and customer receipts"
+    },
+    "/stock_adjustments/{adjustmentId}": {
+      "schema": "StockAdjustment",
+      "description": "Audit records of stock replenished"
+    }
+  }
+}

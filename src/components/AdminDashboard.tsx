@@ -49,6 +49,7 @@ export const AdminDashboard: React.FC = () => {
     salesBills,
     createSalesBill,
     updateBillPayment,
+    setBillPaymentState,
     deleteSalesBill,
     clearAllSalesBills,
     loadSampleBills,
@@ -442,16 +443,14 @@ export const AdminDashboard: React.FC = () => {
     if (!billForPaymentConfirm) return;
     const targetBill = billForPaymentConfirm;
     const fullAmount = targetBill.grandTotalINR;
-    const amountToCredit = Math.max(0, fullAmount - targetBill.amountPaidINR);
 
-    if (amountToCredit > 0) {
-      updateBillPayment(
-        targetBill.id,
-        amountToCredit,
-        targetBill.paymentMode || 'cash',
-        'Customer confirmed ready for payment during bill print'
-      );
-    }
+    // Fill the exact full amount into Merchant Sales Collected
+    setBillPaymentState(
+      targetBill.id,
+      fullAmount,
+      targetBill.paymentMode || 'cash',
+      'Customer payment confirmed: filled in Merchant Sales'
+    );
 
     const updatedBillForPrint: SalesBill = {
       ...targetBill,
@@ -466,8 +465,18 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleConfirmCustomerPaymentNo = () => {
+    if (billForPaymentConfirm) {
+      // User says: "Rs 255 is hown in the Sales,remove the amount -it should be Rs 0 when the No customer Not ready"
+      // Explicitly remove the amount from sales so Merchant Sales Collected becomes ₹0!
+      setBillPaymentState(
+        billForPaymentConfirm.id,
+        0,
+        billForPaymentConfirm.paymentMode,
+        'Customer not ready: sales amount reset to ₹0'
+      );
+    }
     setBillForPaymentConfirm(null);
-    showToast('Payment not confirmed. Merchant Sales was not filled.');
+    showToast('Customer not ready: Sales set to ₹0. Amount removed from Merchant Sales.');
   };
 
   // Revenue Metrics
@@ -550,7 +559,24 @@ export const AdminDashboard: React.FC = () => {
       {/* KPI Metrics Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
         <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <span className="text-stone-500 block text-[11px]">Merchant Sales Collected:</span>
+          <div className="flex items-center justify-between">
+            <span className="text-stone-500 block text-[11px]">Merchant Sales Collected:</span>
+            {totalSalesRevenueINR > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (salesBills.length > 0) {
+                    setBillPaymentState(salesBills[0].id, 0, salesBills[0].paymentMode, 'Customer not ready: reset to ₹0');
+                    showToast('Merchant Sales set to ₹0 (Customer payment not ready).');
+                  }
+                }}
+                className="text-[10px] text-stone-400 hover:text-rose-600 underline font-sans cursor-pointer"
+                title="Reset sales amount to ₹0 if customer is not ready"
+              >
+                Set ₹0
+              </button>
+            )}
+          </div>
           <div className="text-xl sm:text-2xl font-black text-emerald-800 mt-0.5">
             ₹{totalSalesRevenueINR.toLocaleString('en-IN')}
           </div>
@@ -2179,7 +2205,8 @@ export const AdminDashboard: React.FC = () => {
                 Confirmation: Ready for Payment? (Yes / No)
               </p>
               <p className="text-[11px] text-amber-900 leading-relaxed">
-                Only after your confirmation that the customer is ready for payment will the money be filled into <strong>Merchant Sales Collected (INR)</strong> and the bill will be printed.
+                If customer is ready, clicking <strong>"Yes"</strong> will fill ₹{billForPaymentConfirm.grandTotalINR.toLocaleString('en-IN')} into <strong>Merchant Sales Collected (INR)</strong> and open the bill.
+                If customer is not ready, clicking <strong>"No"</strong> ensures Merchant Sales remains at <strong>₹0</strong>.
               </p>
             </div>
 
@@ -2188,10 +2215,10 @@ export const AdminDashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={handleConfirmCustomerPaymentNo}
-                className="w-full sm:w-auto py-3 px-5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs flex items-center justify-center gap-2 border border-stone-300 transition-colors cursor-pointer"
+                className="w-full sm:w-auto py-3 px-5 rounded-xl bg-stone-100 hover:bg-rose-50 text-stone-700 hover:text-rose-700 font-bold text-xs flex items-center justify-center gap-2 border border-stone-300 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4 text-rose-600" />
-                <span>No, Customer Not Ready</span>
+                <span>No, Customer Not Ready (Set Sales to ₹0)</span>
               </button>
 
               <button

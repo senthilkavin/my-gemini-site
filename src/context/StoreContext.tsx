@@ -10,6 +10,8 @@ import {
   AdminUser,
 } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_BILLS } from '../data/productsData';
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { db, testFirebaseConnection } from '../lib/firebase';
 
 interface StoreContextType {
   products: Product[];
@@ -73,6 +75,12 @@ interface StoreContextType {
     billId: string,
     additionalPaymentINR: number,
     paymentMode: PaymentMode,
+    note?: string
+  ) => void;
+  setBillPaymentState: (
+    billId: string,
+    amountPaidINR: number,
+    paymentMode?: PaymentMode,
     note?: string
   ) => void;
   deleteSalesBill: (billId: string) => void;
@@ -185,6 +193,69 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [currentAdmin]);
 
+  // Connect to Firestore and sync real-time collections
+  useEffect(() => {
+    testFirebaseConnection();
+
+    // Listen to Products in Firestore
+    const unsubProducts = onSnapshot(
+      collection(db, 'products'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteProducts: Product[] = [];
+          snapshot.forEach((d) => {
+            remoteProducts.push(d.data() as Product);
+          });
+          setProducts(remoteProducts);
+        } else {
+          // Initialize Firestore with default inventory if empty
+          INITIAL_PRODUCTS.forEach((prod) => {
+            setDoc(doc(db, 'products', prod.id), prod).catch(() => {});
+          });
+        }
+      },
+      (err) => console.warn('Firestore products listener:', err)
+    );
+
+    // Listen to Sales Bills in Firestore
+    const unsubBills = onSnapshot(
+      collection(db, 'sales_bills'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteBills: SalesBill[] = [];
+          snapshot.forEach((d) => {
+            remoteBills.push(d.data() as SalesBill);
+          });
+          remoteBills.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setSalesBills(remoteBills);
+        }
+      },
+      (err) => console.warn('Firestore bills listener:', err)
+    );
+
+    // Listen to Stock Adjustments in Firestore
+    const unsubAdjustments = onSnapshot(
+      collection(db, 'stock_adjustments'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteAdj: StockAdjustment[] = [];
+          snapshot.forEach((d) => {
+            remoteAdj.push(d.data() as StockAdjustment);
+          });
+          remoteAdj.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setStockAdjustments(remoteAdj);
+        }
+      },
+      (err) => console.warn('Firestore adjustments listener:', err)
+    );
+
+    return () => {
+      unsubProducts();
+      unsubBills();
+      unsubAdjustments();
+    };
+  }, []);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3500);
@@ -260,11 +331,15 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           };
           setStockAdjustments((prevAdj) => [newAdj, ...prevAdj]);
 
-          return {
+          const updatedProd = {
             ...p,
             currentStock: newQty,
             stockStatus,
           };
+          setDoc(doc(db, 'products', productId), updatedProd).catch(() => {});
+          setDoc(doc(db, 'stock_adjustments', newAdj.id), newAdj).catch(() => {});
+
+          return updatedProd;
         }
         return p;
       })
@@ -279,11 +354,13 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (p.id === productId) {
           const stockStatus: Product['stockStatus'] =
             newStock <= 0 ? 'out_of_stock' : newStock <= 15 ? 'low_stock' : 'in_stock';
-          return {
+          const updatedProd = {
             ...p,
             currentStock: Math.max(0, newStock),
             stockStatus,
           };
+          setDoc(doc(db, 'products', productId), updatedProd).catch(() => {});
+          return updatedProd;
         }
         return p;
       })
@@ -366,6 +443,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
     setStockAdjustments((prev) => [newAdj, ...prev]);
 
+    setDoc(doc(db, 'products', newProd.id), newProd).catch(() => {});
+    setDoc(doc(db, 'stock_adjustments', newAdj.id), newAdj).catch(() => {});
+
     showToast(`Added "${newProd.name}" with ${newProd.currentStock} stock units!`);
   };
 
@@ -380,7 +460,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               : merged.currentStock <= 15
               ? 'low_stock'
               : 'in_stock';
-          return { ...merged, stockStatus };
+          const updated = { ...merged, stockStatus };
+          setDoc(doc(db, 'products', id), updated).catch(() => {});
+          return updated;
         }
         return p;
       })
@@ -390,6 +472,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const deleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    deleteDoc(doc(db, 'products', id)).catch(() => {});
     showToast('Product removed from stock inventory');
   };
 
@@ -502,6 +585,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     setSalesBills((prev) => [newBill, ...prev]);
 
+    setDoc(doc(db, 'sales_bills', newBill.id), newBill).catch(() => {});
+
     showToast(`Bill #${billNumber} generated! ₹${amountPaidINR} received.`);
     return newBill;
   };
@@ -520,7 +605,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           const newStatus: PaymentStatus =
             newBalance === 0 ? 'paid' : newPaid > 0 ? 'partial' : 'due';
 
-          return {
+          const updatedBill = {
             ...b,
             amountPaidINR: newPaid,
             balanceDueINR: newBalance,
@@ -528,6 +613,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             paymentMode,
             notes: note ? `${b.notes ? b.notes + ' | ' : ''}Payment of ₹${additionalPaymentINR} recorded (${paymentMode})` : b.notes,
           };
+          setDoc(doc(db, 'sales_bills', billId), updatedBill).catch(() => {});
+          return updatedBill;
         }
         return b;
       })
@@ -536,8 +623,39 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast(`Payment of ₹${additionalPaymentINR} recorded successfully.`);
   };
 
+  const setBillPaymentState = (
+    billId: string,
+    amountPaidINR: number,
+    paymentMode?: PaymentMode,
+    note?: string
+  ) => {
+    setSalesBills((prev) =>
+      prev.map((b) => {
+        if (b.id === billId) {
+          const newPaid = Math.max(0, Math.min(b.grandTotalINR, amountPaidINR));
+          const newBalance = Math.max(0, b.grandTotalINR - newPaid);
+          const newStatus: PaymentStatus =
+            newBalance === 0 ? 'paid' : newPaid > 0 ? 'partial' : 'due';
+
+          const updatedBill = {
+            ...b,
+            amountPaidINR: newPaid,
+            balanceDueINR: newBalance,
+            paymentStatus: newStatus,
+            paymentMode: paymentMode || b.paymentMode,
+            notes: note ? `${b.notes ? b.notes + ' | ' : ''}${note}` : b.notes,
+          };
+          setDoc(doc(db, 'sales_bills', billId), updatedBill).catch(() => {});
+          return updatedBill;
+        }
+        return b;
+      })
+    );
+  };
+
   const deleteSalesBill = (billId: string) => {
     setSalesBills((prev) => prev.filter((b) => b.id !== billId));
+    deleteDoc(doc(db, 'sales_bills', billId)).catch(() => {});
     showToast('Sales bill deleted.');
   };
 
@@ -587,6 +705,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         salesBills,
         createSalesBill,
         updateBillPayment,
+        setBillPaymentState,
         deleteSalesBill,
         clearAllSalesBills,
         loadSampleBills,
