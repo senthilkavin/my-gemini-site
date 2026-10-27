@@ -143,71 +143,9 @@ export const ProductsSection: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-in fade-in duration-300">
-      {/* Header Banner */}
-      <div className="bg-stone-900 text-white p-6 sm:p-8 rounded-3xl border border-stone-800 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-emerald-600/30 text-emerald-400 border border-emerald-500/30">
-              <Package className="w-5 h-5" />
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Products & Stock Inventory
-            </h1>
-          </div>
-          <p className="text-stone-400 text-xs sm:text-sm mt-1 max-w-2xl">
-            Enter custom product names and stock counts for <strong>GokulaKrishnan Agencies</strong>.
-            All transactions, quotes, and records in <strong>Indian Rupee (INR / ₹)</strong>.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {isAdminLoggedIn && products.length > 0 && (
-            <button
-              onClick={() => {
-                if (confirm('Clear all entered products and start fresh?')) {
-                  clearAllProducts();
-                }
-              }}
-              className="py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold flex items-center gap-1 border border-stone-700"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Clear All
-            </button>
-          )}
-
-          {isAdminLoggedIn && (
-            <button
-              onClick={() => setIsFormExpanded(!isFormExpanded)}
-              className="py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-emerald-900/40 transition-all cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" />
-              {isFormExpanded ? 'Hide Add Form' : '+ Enter Product & Stock'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Non-Owner Security Notice OR Owner Direct Stock Form */}
-      {!isAdminLoggedIn ? (
-        <div className="bg-stone-900 text-white rounded-3xl p-6 sm:p-7 border border-stone-800 shadow-xl flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-            <Lock className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
-                Owner Access Controlled
-              </span>
-            </div>
-            <h3 className="font-extrabold text-white text-base">
-              Incoming Stock Entry &amp; Quantity Management
-            </h3>
-            <p className="text-stone-400 text-xs mt-0.5 max-w-2xl">
-              No person other than the owners (Sahadevan &amp; Arun Kavinaya) can get inside for the entry of incoming stocks. Please log in with owner credentials to enter new products or replenish godown inventory.
-            </p>
-          </div>
-        </div>
-      ) : isFormExpanded ? (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-in fade-in duration-300">
+      {/* Owner Direct Stock Form (Only visible when toggled by logged-in admin) */}
+      {isAdminLoggedIn && isFormExpanded && (
         <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-600/40 shadow-xl space-y-5 animate-in slide-in-from-top-4 duration-200">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 pb-3">
               <div>
@@ -359,7 +297,7 @@ export const ProductsSection: React.FC = () => {
             </div>
           </form>
         </div>
-      ) : null}
+      )}
 
       {/* Category Pills Filter */}
       <div className="space-y-4">
@@ -425,6 +363,17 @@ export const ProductsSection: React.FC = () => {
                 ? `${filteredProducts.length} Product${filteredProducts.length === 1 ? '' : 's'} in Stock`
                 : 'Demo Godown Images & Items'}
             </span>
+
+            {isAdminLoggedIn && (
+              <button
+                type="button"
+                onClick={() => setIsFormExpanded(!isFormExpanded)}
+                className="py-1.5 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                {isFormExpanded ? 'Hide Entry Form' : '+ Add Product'}
+              </button>
+            )}
           </div>
         </div>
       </div>
