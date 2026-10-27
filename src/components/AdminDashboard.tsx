@@ -30,6 +30,7 @@ import {
   Image as ImageIcon,
   X,
   RotateCcw,
+  Clock,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, ProductCategory, BillItem, PaymentMode, SalesBill } from '../types';
@@ -517,6 +518,11 @@ export const AdminDashboard: React.FC = () => {
             <span className="text-stone-500">•</span>
             <span className="text-stone-300">
               Partner: <strong>Sahadevan (+91 94864 26294)</strong> &amp; <strong>Arun Kavinaya (+91 97909 74822)</strong>
+            </span>
+            <span className="text-stone-500">•</span>
+            <span className="flex items-center gap-1 font-semibold text-[11px] text-amber-300 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-800/60" title="Security policy: prompts after 10 minutes of inactivity before auto-logout">
+              <Clock className="w-3 h-3 text-amber-400" />
+              10m Idle Auto-Expiry
             </span>
           </div>
         </div>
