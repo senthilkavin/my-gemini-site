@@ -12,7 +12,24 @@ import {
   Copy,
 } from 'lucide-react';
 import { SalesBill } from '../types';
-import { downloadPrintableInvoice, copyBillWhatsAppText, printBillDocument } from '../utils/printInvoice';
+import {
+  downloadPrintableInvoice,
+  copyBillWhatsAppText,
+  printBillDocument,
+  getBillWhatsAppUrl,
+  openBillInWhatsApp,
+} from '../utils/printInvoice';
+
+const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M8.53 7.33C8.37 7.33 8.1 7.39 7.87 7.64C7.65 7.89 7 8.5 7 9.71C7 10.93 7.89 12.1 8.01 12.27C8.14 12.44 9.76 14.94 12.25 16C12.84 16.27 13.3 16.42 13.66 16.53C14.25 16.72 14.79 16.69 15.22 16.63C15.7 16.56 16.68 16.03 16.89 15.45C17.1 14.87 17.1 14.38 17.04 14.27C16.97 14.17 16.81 14.11 16.56 13.99C16.32 13.86 15.12 13.27 14.9 13.19C14.67 13.11 14.51 13.07 14.35 13.31C14.19 13.56 13.72 14.11 13.58 14.27C13.43 14.44 13.29 14.46 13.05 14.34C12.8 14.21 11.99 13.95 11.04 13.1C10.3 12.44 9.8 11.62 9.65 11.38C9.51 11.14 9.64 11 9.76 10.88C9.87 10.77 10.01 10.59 10.14 10.44C10.26 10.29 10.3 10.18 10.38 10.02C10.46 9.85 10.42 9.71 10.36 9.59C10.3 9.47 9.83 8.31 9.63 7.84C9.43 7.38 9.24 7.44 9.09 7.43C8.95 7.43 8.78 7.33 8.53 7.33Z" />
+  </svg>
+);
 
 interface BillPrintModalProps {
   bill: SalesBill | null;
@@ -54,12 +71,19 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ bill, onClose })
     setTimeout(() => setPrintTip(null), 4000);
   };
 
-  const handleCopyWhatsApp = async () => {
-    const success = await copyBillWhatsAppText(bill);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    }
+  const handleOpenWhatsApp = (e?: React.MouseEvent) => {
+    // Also copy bill text to clipboard so it's always available
+    copyBillWhatsAppText(bill);
+    setCopied(true);
+    setPrintTip(
+      bill.customerPhone
+        ? `Opening WhatsApp with bill for ${bill.customerName} (${bill.customerPhone}). Message is loaded, ready to send!`
+        : 'Opening WhatsApp with bill summary preloaded, ready to send!'
+    );
+    setTimeout(() => {
+      setCopied(false);
+      setPrintTip(null);
+    }, 5000);
   };
 
   return (
@@ -113,25 +137,31 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ bill, onClose })
               <span className="hidden sm:inline">Download File</span>
             </button>
 
-            {/* Copy for WhatsApp */}
-            <button
-              type="button"
-              onClick={handleCopyWhatsApp}
-              className="py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Copy bill summary to clipboard for WhatsApp"
+            {/* Direct Open WhatsApp Button */}
+            <a
+              href={getBillWhatsAppUrl(bill)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleOpenWhatsApp}
+              className="py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title={
+                bill.customerPhone
+                  ? `Open WhatsApp with bill for ${bill.customerName} (${bill.customerPhone})`
+                  : 'Open WhatsApp with preloaded bill summary'
+              }
             >
               {copied ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Copied!</span>
+                  <span className="text-emerald-400">Opened!</span>
                 </>
               ) : (
                 <>
-                  <Share2 className="w-3.5 h-3.5" />
+                  <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-400" />
                   <span className="hidden sm:inline">WhatsApp</span>
                 </>
               )}
-            </button>
+            </a>
 
             <button
               type="button"
@@ -376,14 +406,21 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ bill, onClose })
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={handleCopyWhatsApp}
-                className="py-2.5 px-3.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              <a
+                href={getBillWhatsAppUrl(bill)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleOpenWhatsApp}
+                className="py-2.5 px-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                title={
+                  bill.customerPhone
+                    ? `Open WhatsApp with bill for ${bill.customerName} (${bill.customerPhone})`
+                    : 'Open WhatsApp with preloaded bill summary ready to send'
+                }
               >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>{copied ? 'Copied!' : 'WhatsApp Bill'}</span>
-              </button>
+                <WhatsAppIcon className="w-4 h-4 text-emerald-600" />
+                <span>{copied ? 'WhatsApp Opened!' : 'WhatsApp Bill'}</span>
+              </a>
 
               <button
                 type="button"

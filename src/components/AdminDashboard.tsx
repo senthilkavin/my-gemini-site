@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, ProductCategory, BillItem, PaymentMode, SalesBill } from '../types';
+import { getBillWhatsAppUrl } from '../utils/printInvoice';
 
 export const AdminDashboard: React.FC = () => {
   const {
@@ -1710,8 +1711,21 @@ export const AdminDashboard: React.FC = () => {
                             className="py-1 px-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-extrabold text-[11px] flex items-center gap-1 shadow-sm transition-colors cursor-pointer"
                             title="Print / View Official Tax Invoice"
                           >
-                            <Printer className="w-3.5 h-3.5 text-amber-300" /> Print Bill
+                            <Printer className="w-3.5 h-3.5 text-amber-300" /> Print
                           </button>
+                          <a
+                            href={getBillWhatsAppUrl(b)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="py-1 px-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm transition-colors cursor-pointer"
+                            title={
+                              b.customerPhone
+                                ? `Send Bill #${b.billNumber} to ${b.customerName} (${b.customerPhone}) via WhatsApp`
+                                : `Send Bill #${b.billNumber} via WhatsApp`
+                            }
+                          >
+                            <span className="text-xs">💬</span> WhatsApp
+                          </a>
                           {b.balanceDueINR > 0 && (
                             <button
                               type="button"

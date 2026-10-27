@@ -1,6 +1,137 @@
 import { SalesBill } from '../types';
 
 /**
+ * Formats a clean, professional WhatsApp text receipt for GokulaKrishnan Agencies.
+ */
+export const formatBillWhatsAppText = (bill: SalesBill): string => {
+  const formattedDate = new Date(bill.date).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const lines = [
+    `*🧾 GOKULAKRISHNAN AGENCIES*`,
+    `*Wholesale Stockist & Commodity Merchant*`,
+    `----------------------------------------`,
+    `*Tax Invoice / Cash Bill:* #${bill.billNumber}`,
+    `*Date:* ${formattedDate}`,
+    `*Customer:* ${bill.customerName}${bill.customerPhone ? ` (${bill.customerPhone})` : ''}`,
+    bill.customerAddress ? `*Location:* ${bill.customerAddress}` : '',
+    `----------------------------------------`,
+    `*ITEMS ORDERED:*`,
+    ...bill.items.map(
+      (item, i) =>
+        `${i + 1}. *${item.productName}* (${item.packagingUnit})\n   Qty: ${item.quantity} x ₹${item.unitPriceINR.toLocaleString('en-IN')} = *₹${item.totalINR.toLocaleString('en-IN')}*`
+    ),
+    `----------------------------------------`,
+    `Subtotal: ₹${bill.subtotalINR.toLocaleString('en-IN')}`,
+    bill.discountINR > 0 ? `Discount: - ₹${bill.discountINR.toLocaleString('en-IN')}` : '',
+    bill.taxGSTPercent > 0 ? `GST (${bill.taxGSTPercent}%): + ₹${bill.taxINR.toLocaleString('en-IN')}` : '',
+    `*GRAND TOTAL:* ₹${bill.grandTotalINR.toLocaleString('en-IN')} (INR)`,
+    `*Amount Received:* ₹${bill.amountPaidINR.toLocaleString('en-IN')} (INR)`,
+    bill.balanceDueINR > 0
+      ? `*Balance Due:* ₹${bill.balanceDueINR.toLocaleString('en-IN')} (INR)`
+      : `*Payment Status:* FULLY PAID`,
+    `Payment Mode: ${bill.paymentMode.replace('_', ' ').toUpperCase()}`,
+    bill.paymentReference ? `Reference: ${bill.paymentReference}` : '',
+    `----------------------------------------`,
+    `*Billed By:* ${bill.billedBy}`,
+    `*Proprietors Contact:*`,
+    `Sahadevan: +91 94864 26294`,
+    `Arun Kavinaya: +91 97909 74822`,
+    `Thank you for your business!`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return lines;
+};
+
+/**
+ * Normalizes phone numbers for WhatsApp API (e.g. 10-digit Indian numbers -> 91XXXXXXXXXX).
+ */
+export const normalizeWhatsAppPhone = (phone?: string): string => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10) {
+    return `91${digits}`;
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return digits;
+  }
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return `91${digits.slice(1)}`;
+  }
+  return digits;
+};
+
+/**
+ * Generates direct WhatsApp click-to-chat URL with pre-filled bill message.
+ * If customer phone is present, opens directly in chat with customer.
+ * If phone is absent, opens WhatsApp with message ready to select any contact.
+ */
+export const getBillWhatsAppUrl = (bill: SalesBill): string => {
+  const text = formatBillWhatsAppText(bill);
+  const encodedText = encodeURIComponent(text);
+  const phone = normalizeWhatsAppPhone(bill.customerPhone);
+
+  if (phone) {
+    return `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+  }
+  return `https://api.whatsapp.com/send?text=${encodedText}`;
+};
+
+/**
+ * Copies cleanly formatted WhatsApp receipt text to clipboard.
+ */
+export const copyBillWhatsAppText = async (bill: SalesBill): Promise<boolean> => {
+  const lines = formatBillWhatsAppText(bill);
+
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(lines);
+      return true;
+    }
+    throw new Error('Clipboard API not available');
+  } catch {
+    // Fallback for older browsers / iframe contexts
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = lines;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch {
+      return false;
+    }
+  }
+};
+
+/**
+ * Opens WhatsApp directly with the preloaded bill and copies text to clipboard as backup.
+ */
+export const openBillInWhatsApp = (bill: SalesBill): void => {
+  const url = getBillWhatsAppUrl(bill);
+  copyBillWhatsAppText(bill).catch(() => {});
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+/**
  * Generates a complete, self-contained, standalone printable HTML invoice for GokulaKrishnan Agencies.
  * Includes embedded CSS, clean table styling, signature blocks, and auto-print triggers.
  */
@@ -28,6 +159,8 @@ export const generatePrintableInvoiceHtml = (bill: SalesBill): string => {
     `
     )
     .join('');
+
+  const whatsAppUrl = getBillWhatsAppUrl(bill);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -74,7 +207,7 @@ export const generatePrintableInvoiceHtml = (bill: SalesBill): string => {
       background: #059669;
       color: #ffffff;
       border: none;
-      padding: 9px 20px;
+      padding: 9px 18px;
       border-radius: 10px;
       font-weight: 800;
       font-size: 13px;
@@ -84,9 +217,17 @@ export const generatePrintableInvoiceHtml = (bill: SalesBill): string => {
       gap: 6px;
       box-shadow: 0 4px 12px rgba(5,150,105,0.4);
       transition: background 0.2s;
+      text-decoration: none;
     }
     .print-btn:hover {
       background: #10b981;
+    }
+    .whatsapp-btn {
+      background: #16a34a;
+      box-shadow: 0 4px 12px rgba(22,163,74,0.4);
+    }
+    .whatsapp-btn:hover {
+      background: #22c55e;
     }
     .invoice-body {
       padding: 36px 40px;
@@ -260,9 +401,14 @@ export const generatePrintableInvoiceHtml = (bill: SalesBill): string => {
         <strong>Official Sales Invoice • #${bill.billNumber}</strong>
         <span style="opacity: 0.7; margin-left: 8px;">GokulaKrishnan Agencies</span>
       </div>
-      <button class="print-btn" onclick="window.print()">
-        🖨️ Print This Invoice / Save as PDF
-      </button>
+      <div style="display: flex; gap: 8px;">
+        <a class="print-btn whatsapp-btn" href="${whatsAppUrl}" target="_blank" rel="noopener noreferrer">
+          💬 WhatsApp Bill
+        </a>
+        <button class="print-btn" onclick="window.print()">
+          🖨️ Print / Save as PDF
+        </button>
+      </div>
     </div>
 
     <div class="invoice-body">
@@ -386,64 +532,6 @@ export const downloadPrintableInvoice = (bill: SalesBill): void => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch (err) {
     console.error('Failed to download invoice', err);
-  }
-};
-
-/**
- * Copies a cleanly formatted WhatsApp receipt text to clipboard.
- */
-export const copyBillWhatsAppText = async (bill: SalesBill): Promise<boolean> => {
-  const formattedDate = new Date(bill.date).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-
-  const lines = [
-    `*🧾 GOKULAKRISHNAN AGENCIES*`,
-    `*Wholesale Stockist & Commodity Merchant*`,
-    `----------------------------------------`,
-    `*Tax Invoice / Cash Bill:* #${bill.billNumber}`,
-    `*Date:* ${formattedDate}`,
-    `*Customer:* ${bill.customerName} (${bill.customerPhone})`,
-    bill.customerAddress ? `*Location:* ${bill.customerAddress}` : '',
-    `----------------------------------------`,
-    `*ITEMS ORDERED:*`,
-    ...bill.items.map(
-      (item, i) =>
-        `${i + 1}. *${item.productName}* (${item.packagingUnit})\n   Qty: ${item.quantity} x ₹${item.unitPriceINR.toLocaleString('en-IN')} = *₹${item.totalINR.toLocaleString('en-IN')}*`
-    ),
-    `----------------------------------------`,
-    `Subtotal: ₹${bill.subtotalINR.toLocaleString('en-IN')}`,
-    bill.discountINR > 0 ? `Discount: - ₹${bill.discountINR.toLocaleString('en-IN')}` : '',
-    bill.taxGSTPercent > 0 ? `GST (${bill.taxGSTPercent}%): + ₹${bill.taxINR.toLocaleString('en-IN')}` : '',
-    `*GRAND TOTAL:* ₹${bill.grandTotalINR.toLocaleString('en-IN')} (INR)`,
-    `*Amount Received:* ₹${bill.amountPaidINR.toLocaleString('en-IN')} (INR)`,
-    bill.balanceDueINR > 0 ? `*Balance Due:* ₹${bill.balanceDueINR.toLocaleString('en-IN')} (INR)` : `*Payment Status:* FULLY PAID`,
-    `Payment Mode: ${bill.paymentMode.toUpperCase()}`,
-    bill.paymentReference ? `Reference: ${bill.paymentReference}` : '',
-    `----------------------------------------`,
-    `*Billed By:* ${bill.billedBy}`,
-    `*Proprietors Contact:*`,
-    `Sahadevan: +91 94864 26294`,
-    `Arun Kavinaya: +91 97909 74822`,
-    `Thank you for your business!`,
-  ]
-    .filter(Boolean)
-    .join('\n');
-
-  try {
-    await navigator.clipboard.writeText(lines);
-    return true;
-  } catch {
-    // Fallback for older browsers
-    const textArea = document.createElement('textarea');
-    textArea.value = lines;
-    document.body.appendChild(textArea);
-    textArea.select();
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    return successful;
   }
 };
 
