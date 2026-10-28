@@ -32,7 +32,12 @@ export const isBaitProduct = (p: { category: ProductCategory; packagingUnit?: st
  */
 export const isLitreProduct = (p: { category: ProductCategory; packagingUnit?: string }): boolean => {
   if (isBagProduct(p) || isBaitProduct(p)) return false;
-  return p.category === 'insecticide' || p.category === 'pesticide' || p.category === 'weedicide';
+  return (
+    p.category === 'insecticide' ||
+    p.category === 'pesticide' ||
+    p.category === 'weedicide' ||
+    p.category === 'fertilizer'
+  );
 };
 
 /**

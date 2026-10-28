@@ -21,7 +21,7 @@ import {
   Sparkles,
   Receipt,
   Lock,
-  ShoppingCart,
+  Wheat,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, ProductCategory } from '../types';
@@ -43,7 +43,6 @@ export const ProductsSection: React.FC = () => {
     isAdminLoggedIn,
     setActiveTab,
     setIsLoginModalOpen,
-    setConsumerPurchaseProduct,
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +70,7 @@ export const ProductsSection: React.FC = () => {
 
   const categories: { id: 'all' | ProductCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'all', label: 'All Products', icon: Package },
+    { id: 'fertilizer', label: 'Fertilizers', icon: Wheat },
     { id: 'insecticide', label: 'Insecticides', icon: Bug },
     { id: 'pesticide', label: 'Pesticides & Fungicides', icon: ShieldCheck },
     { id: 'weedicide', label: 'Weedicides', icon: Sprout },
@@ -193,8 +193,9 @@ export const ProductsSection: React.FC = () => {
                   className="w-full border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                 >
                   <option value="cement">Ordinary Cement (Not Agricultural - OPC 53/43/PPC)</option>
-                  <option value="insecticide">Insecticides (Soil & Foliar Pests)</option>
-                  <option value="pesticide">Pesticides & Fungicides (Crop Disease)</option>
+                  <option value="fertilizer">Fertilizers &amp; Soil Nutrients (DAP, Urea, NPK, Potash)</option>
+                  <option value="insecticide">Insecticides (Soil &amp; Foliar Pests)</option>
+                  <option value="pesticide">Pesticides &amp; Fungicides (Crop Disease)</option>
                   <option value="weedicide">Weedicides / Herbicides (Land Clearing)</option>
                   <option value="ant_poison">Ant Poison (Bait Gels / Powders)</option>
                   <option value="rat_poison">Rat Poison (Rodenticide Cakes/Bait)</option>
@@ -720,21 +721,6 @@ export const ProductsSection: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Consumer Purchase Button: Automatically deducts Bags, Liquid Litres, or Bait Units */}
-                    <button
-                      type="button"
-                      onClick={() => setConsumerPurchaseProduct(p)}
-                      disabled={p.currentStock <= 0}
-                      className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-50 disabled:bg-stone-200 disabled:text-stone-500 text-stone-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/20 transition-all cursor-pointer"
-                    >
-                      <ShoppingCart className="w-4 h-4 text-stone-950" />
-                      {p.currentStock > 0 ? (
-                        <span>Instant Purchase ({getPackagingUnitName(p)} Deducted)</span>
-                      ) : (
-                        <span>Out of Stock</span>
-                      )}
-                    </button>
-
                     {/* Direct Contact Calling Buttons */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <a
@@ -857,6 +843,7 @@ export const ProductsSection: React.FC = () => {
                     className="w-full border border-stone-300 rounded-xl px-3 py-2 text-stone-900 font-semibold focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="cement">Ordinary Cement</option>
+                    <option value="fertilizer">Fertilizers &amp; Nutrients</option>
                     <option value="insecticide">Insecticides</option>
                     <option value="pesticide">Pesticides</option>
                     <option value="weedicide">Weedicides</option>

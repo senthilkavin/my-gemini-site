@@ -3,6 +3,7 @@ export type ProductCategory =
   | 'pesticide'
   | 'weedicide'
   | 'cement'
+  | 'fertilizer'
   | 'ant_poison'
   | 'rat_poison';
 

@@ -17,6 +17,7 @@ import {
   Lock,
   PhoneCall,
   LayoutDashboard,
+  Wheat,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductCategory } from '../types';
@@ -34,6 +35,24 @@ export const HomeSection: React.FC = () => {
     stockCount: number;
     userProductNames: string;
   }[] = [
+    {
+      id: 'fertilizer',
+      title: 'Fertilizers & Nutrients',
+      description: 'DAP 18:46:0, Urea 46%, NPK complex granules, MOP Potash, and soil conditioning nutrients for high agricultural yields.',
+      icon: Wheat,
+      accentColor: 'from-emerald-700 to-teal-800',
+      stockCount: products
+        .filter((p) => p.category === 'fertilizer')
+        .reduce((sum, p) => sum + p.currentStock, 0),
+      userProductNames:
+        products.filter((p) => p.category === 'fertilizer').length > 0
+          ? products
+              .filter((p) => p.category === 'fertilizer')
+              .map((p) => `${p.name} (${p.currentStock})`)
+              .slice(0, 2)
+              .join(', ')
+          : 'DAP 18:46:0 & Urea 46% N (400 bags)',
+    },
     {
       id: 'insecticide',
       title: 'Insecticides',

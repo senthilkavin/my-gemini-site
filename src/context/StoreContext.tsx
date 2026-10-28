@@ -12,7 +12,6 @@ import {
 import { INITIAL_PRODUCTS, INITIAL_BILLS } from '../data/productsData';
 import { collection, doc, setDoc, deleteDoc, getDocs, onSnapshot } from 'firebase/firestore';
 import { db, testFirebaseConnection } from '../lib/firebase';
-import { getPackagingUnitName } from '../utils/productUtils';
 
 interface StoreContextType {
   products: Product[];
@@ -92,20 +91,6 @@ interface StoreContextType {
   selectedBillForPrint: SalesBill | null;
   setSelectedBillForPrint: (bill: SalesBill | null) => void;
 
-  // Consumer Instant Purchase with Auto Stock Deduction (Bags, Litres, Bait Units)
-  consumerPurchaseProduct: Product | null;
-  setConsumerPurchaseProduct: (p: Product | null) => void;
-  consumerPurchase: (purchaseInput: {
-    productId: string;
-    quantity: number;
-    customerName: string;
-    customerPhone: string;
-    customerAddress?: string;
-    paymentMode: PaymentMode;
-    amountPaidINR?: number;
-    notes?: string;
-  }) => SalesBill | null;
-
   // Dynamic Owner Password & Recovery
   ownerPassword: string;
   updateOwnerPassword: (newPass: string) => void;
@@ -176,7 +161,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const [selectedBillForPrint, setSelectedBillForPrint] = useState<SalesBill | null>(null);
-  const [consumerPurchaseProduct, setConsumerPurchaseProduct] = useState<Product | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -251,8 +235,18 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       (snapshot) => {
         if (!snapshot.empty) {
           const remoteProducts: Product[] = [];
+          const existingIds = new Set<string>();
           snapshot.forEach((d) => {
-            remoteProducts.push(d.data() as Product);
+            const prod = d.data() as Product;
+            remoteProducts.push(prod);
+            existingIds.add(prod.id);
+          });
+          // Automatically seed newly added catalog products (e.g. fertilizers)
+          INITIAL_PRODUCTS.forEach((prod) => {
+            if (!existingIds.has(prod.id)) {
+              setDoc(doc(db, 'products', prod.id), prod).catch(() => {});
+              remoteProducts.push(prod);
+            }
           });
           setProducts(remoteProducts);
         } else {
@@ -680,63 +674,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return newBill;
   };
 
-  // Consumer Direct Purchase: Automatically deducts Bags, Liquid Litres, or Bait Units based on purchase
-  const consumerPurchase = (purchaseInput: {
-    productId: string;
-    quantity: number;
-    customerName: string;
-    customerPhone: string;
-    customerAddress?: string;
-    paymentMode: PaymentMode;
-    amountPaidINR?: number;
-    notes?: string;
-  }): SalesBill | null => {
-    const product = products.find((p) => p.id === purchaseInput.productId);
-    if (!product) {
-      showToast('Selected product was not found in godown.');
-      return null;
-    }
-
-    if (product.currentStock <= 0) {
-      showToast(`Sorry, "${product.name}" is currently out of stock.`);
-      return null;
-    }
-
-    const buyQty = Math.max(1, Math.min(product.currentStock, purchaseInput.quantity));
-    const unitPrice = product.unitPriceINR > 0 ? product.unitPriceINR : 380;
-    const itemTotalINR = buyQty * unitPrice;
-    const unitLabel = getPackagingUnitName(product);
-
-    const billItem: BillItem = {
-      productId: product.id,
-      productName: product.name,
-      category: product.category,
-      packagingUnit: product.packagingUnit || unitLabel,
-      quantity: buyQty,
-      unitPriceINR: unitPrice,
-      totalINR: itemTotalINR,
-    };
-
-    const newBill = createSalesBill({
-      customerName: purchaseInput.customerName.trim(),
-      customerPhone: purchaseInput.customerPhone.trim(),
-      customerAddress: purchaseInput.customerAddress?.trim() || 'Customer Purchase Delivery',
-      items: [billItem],
-      discountINR: 0,
-      taxGSTPercent: 0,
-      amountPaidINR: purchaseInput.amountPaidINR ?? itemTotalINR,
-      paymentMode: purchaseInput.paymentMode,
-      billedBy: 'Consumer Purchase',
-      notes:
-        purchaseInput.notes?.trim() ||
-        `Direct Consumer Purchase of ${buyQty} ${unitLabel} (${product.name})`,
-    });
-
-    setSelectedBillForPrint(newBill);
-    showToast(`✓ Purchase successful! ${buyQty} ${unitLabel} deducted from godown stock.`);
-    return newBill;
-  };
-
   const updateBillPayment = (
     billId: string,
     additionalPaymentINR: number,
@@ -903,9 +840,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         loadSampleBills,
         selectedBillForPrint,
         setSelectedBillForPrint,
-        consumerPurchaseProduct,
-        setConsumerPurchaseProduct,
-        consumerPurchase,
         ownerPassword,
         updateOwnerPassword,
       }}

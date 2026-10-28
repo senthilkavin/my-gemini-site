@@ -98,7 +98,7 @@ export const AdminDashboard: React.FC = () => {
   const [inputPriceINR, setInputPriceINR] = useState<number | ''>('');
   const [inputPackaging, setInputPackaging] = useState('');
   const [inputBrand, setInputBrand] = useState('UltraTech / Dalmia');
-  const [inputImagePreset, setInputImagePreset] = useState<'ultratech' | 'insecticide' | 'weedicide' | 'ant' | 'rat' | 'custom'>('ultratech');
+  const [inputImagePreset, setInputImagePreset] = useState<'ultratech' | 'fertilizer' | 'insecticide' | 'weedicide' | 'ant' | 'rat' | 'custom'>('ultratech');
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [inputActiveIngredient, setInputActiveIngredient] = useState('');
   const [inputUsage, setInputUsage] = useState('');
@@ -175,6 +175,11 @@ export const AdminDashboard: React.FC = () => {
       label: 'UltraTech OPC 53 / PPC Cement',
       category: 'cement',
     },
+    fertilizer: {
+      url: 'https://images.unsplash.com/photo-1628352081506-83c43123ed6d?auto=format&fit=crop&w=1000&q=80',
+      label: 'Fertilizers (DAP, Urea, NPK & Potash)',
+      category: 'fertilizer',
+    },
     insecticide: {
       url: 'https://images.unsplash.com/photo-1615811361523-6bd03d7748e7?auto=format&fit=crop&w=1000&q=80',
       label: 'Insecticide (Chlorpyrifos & Termiticide)',
@@ -209,6 +214,7 @@ export const AdminDashboard: React.FC = () => {
     setInputActiveIngredient(p.activeIngredient || '');
 
     if (p.image === PRESET_IMAGES.ultratech.url) setInputImagePreset('ultratech');
+    else if (p.image === PRESET_IMAGES.fertilizer.url) setInputImagePreset('fertilizer');
     else if (p.image === PRESET_IMAGES.insecticide.url) setInputImagePreset('insecticide');
     else if (p.image === PRESET_IMAGES.weedicide.url) setInputImagePreset('weedicide');
     else if (p.image === PRESET_IMAGES.ant.url) setInputImagePreset('ant');
@@ -247,7 +253,7 @@ export const AdminDashboard: React.FC = () => {
       return;
     }
 
-    let chosenImg = PRESET_IMAGES[inputCategory === 'cement' ? 'ultratech' : inputCategory === 'weedicide' ? 'weedicide' : inputCategory === 'insecticide' ? 'insecticide' : inputCategory === 'ant_poison' ? 'ant' : 'rat']?.url;
+    let chosenImg = PRESET_IMAGES[inputCategory === 'cement' ? 'ultratech' : inputCategory === 'fertilizer' ? 'fertilizer' : inputCategory === 'weedicide' ? 'weedicide' : inputCategory === 'insecticide' ? 'insecticide' : inputCategory === 'ant_poison' ? 'ant' : 'rat']?.url;
     if (inputImagePreset === 'custom' && customImageUrl.trim()) {
       chosenImg = customImageUrl.trim();
     } else if (inputImagePreset !== 'custom') {
@@ -1027,6 +1033,7 @@ export const AdminDashboard: React.FC = () => {
                       const cat = e.target.value as ProductCategory;
                       setInputCategory(cat);
                       if (cat === 'cement') setInputImagePreset('ultratech');
+                      else if (cat === 'fertilizer') setInputImagePreset('fertilizer');
                       else if (cat === 'insecticide') setInputImagePreset('insecticide');
                       else if (cat === 'weedicide') setInputImagePreset('weedicide');
                       else if (cat === 'ant_poison') setInputImagePreset('ant');
@@ -1035,6 +1042,7 @@ export const AdminDashboard: React.FC = () => {
                     className="w-full border border-stone-300 rounded-xl px-3 py-2.5 text-stone-900 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                   >
                     <option value="cement">Ordinary Cement (OPC 53/43/PPC Building)</option>
+                    <option value="fertilizer">Fertilizers &amp; Soil Nutrients (DAP, Urea, NPK, Potash)</option>
                     <option value="insecticide">Insecticides (Termite / Soil pests)</option>
                     <option value="weedicide">Weedicides (Glyphosate / Land clearing)</option>
                     <option value="pesticide">Pesticides &amp; Crop Fungicides</option>
