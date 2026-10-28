@@ -54,6 +54,8 @@ export const AdminDashboard: React.FC = () => {
     setBillPaymentState,
     deleteSalesBill,
     clearAllSalesBills,
+    resetMerchantSalesToZero,
+    resetCustomerBalanceToZero,
     loadSampleBills,
     stockAdjustments,
     setActiveTab,
@@ -484,6 +486,29 @@ export const AdminDashboard: React.FC = () => {
   // Revenue Metrics
   const totalSalesRevenueINR = salesBills.reduce((acc, b) => acc + b.amountPaidINR, 0);
   const totalPendingDueINR = salesBills.reduce((acc, b) => acc + b.balanceDueINR, 0);
+
+  // Separate Godown Stock counts by Packaging Unit Types: Bags, Litres, and Bait Units
+  const isBagProduct = (p: Product) =>
+    p.category === 'cement' || p.packagingUnit.toLowerCase().includes('bag');
+
+  const isBaitProduct = (p: Product) =>
+    p.category === 'ant_poison' ||
+    p.category === 'rat_poison' ||
+    p.packagingUnit.toLowerCase().includes('bait') ||
+    p.packagingUnit.toLowerCase().includes('tube') ||
+    p.packagingUnit.toLowerCase().includes('syringe') ||
+    p.packagingUnit.toLowerCase().includes('cake') ||
+    p.packagingUnit.toLowerCase().includes('box') ||
+    p.packagingUnit.toLowerCase().includes('bar');
+
+  const isLitreProduct = (p: Product) =>
+    (p.category === 'insecticide' || p.category === 'pesticide' || p.category === 'weedicide') &&
+    !isBagProduct(p) &&
+    !isBaitProduct(p);
+
+  const totalBags = products.filter(isBagProduct).reduce((acc, p) => acc + p.currentStock, 0);
+  const totalLitres = products.filter(isLitreProduct).reduce((acc, p) => acc + p.currentStock, 0);
+  const totalBaitUnits = products.filter(isBaitProduct).reduce((acc, p) => acc + p.currentStock, 0);
   const totalStockUnits = products.reduce((acc, p) => acc + p.currentStock, 0);
 
   // Filtered products for direct stock table
@@ -563,55 +588,176 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Metrics Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-stone-500 block text-[11px]">Merchant Sales Collected:</span>
-            {totalSalesRevenueINR > 0 && (
+      {/* KPI Metrics: Financial & Sales (Set to 0) + Godown Stock by Packaging Units (Bags, Litres, Bait Units separately) */}
+      <div className="space-y-4 font-mono">
+        {/* ROW 1: Financial & Sales Invoices (All fields set to 0) */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider font-sans">
+              Billing &amp; Revenue Overview
+            </span>
+            {(totalSalesRevenueINR > 0 || totalPendingDueINR > 0 || salesBills.length > 0) && (
               <button
                 type="button"
                 onClick={() => {
-                  if (salesBills.length > 0) {
-                    setBillPaymentState(salesBills[0].id, 0, salesBills[0].paymentMode, 'Customer not ready: reset to ₹0');
-                    showToast('Merchant Sales set to ₹0 (Customer payment not ready).');
+                  if (confirm('Set all fields to 0? This clears all sales bills, resetting Merchant Sales and Balance Due to ₹0.')) {
+                    clearAllSalesBills();
                   }
                 }}
-                className="text-[10px] text-stone-400 hover:text-rose-600 underline font-sans cursor-pointer"
-                title="Reset sales amount to ₹0 if customer is not ready"
+                className="py-1 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] font-sans border border-rose-200 transition-colors cursor-pointer"
               >
-                Set ₹0
+                Reset All Fields to 0
               </button>
             )}
           </div>
-          <div className="text-xl sm:text-2xl font-black text-emerald-800 mt-0.5">
-            ₹{totalSalesRevenueINR.toLocaleString('en-IN')}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            {/* Metric 1: Merchant Sales Collected */}
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500 block text-[11px]">Merchant Sales Collected:</span>
+                {totalSalesRevenueINR > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Set Merchant Sales Collected back to ₹0?')) {
+                        resetMerchantSalesToZero();
+                      }
+                    }}
+                    className="text-[10px] text-rose-600 hover:text-rose-700 font-bold underline font-sans cursor-pointer"
+                    title="Reset merchant sales collected to ₹0"
+                  >
+                    Set ₹0
+                  </button>
+                )}
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-800 mt-0.5">
+                ₹{totalSalesRevenueINR.toLocaleString('en-IN')}
+              </div>
+              <span className="text-[10px] text-emerald-600 font-sans font-bold">In Indian Rupees (INR)</span>
+            </div>
+
+            {/* Metric 2: Credit / Balance Due */}
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500 block text-[11px]">Credit / Balance Due:</span>
+                {totalPendingDueINR > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Set Customer Credit / Balance Due back to ₹0?')) {
+                        resetCustomerBalanceToZero();
+                      }
+                    }}
+                    className="text-[10px] text-rose-600 hover:text-rose-700 font-bold underline font-sans cursor-pointer"
+                    title="Clear outstanding customer balance to ₹0"
+                  >
+                    Set ₹0
+                  </button>
+                )}
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-rose-700 mt-0.5">
+                ₹{totalPendingDueINR.toLocaleString('en-IN')}
+              </div>
+              <span className="text-[10px] text-rose-600 font-sans font-bold">Outstanding Customer Balances</span>
+            </div>
+
+            {/* Metric 3: Generated Sales Bills */}
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500 block text-[11px]">Generated Sales Bills:</span>
+                {salesBills.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Set Generated Sales Bills to 0? This will clear all bills and reset Sales & Balances to ₹0.')) {
+                        clearAllSalesBills();
+                      }
+                    }}
+                    className="text-[10px] text-rose-600 hover:text-rose-700 font-bold underline font-sans cursor-pointer"
+                    title="Set generated sales bills count to 0 and clear sales records"
+                  >
+                    Set to 0
+                  </button>
+                )}
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-amber-700 mt-0.5">
+                {salesBills.length}
+              </div>
+              <span className="text-[10px] text-amber-600 font-sans font-bold">Tax Invoices Recorded</span>
+            </div>
           </div>
-          <span className="text-[10px] text-emerald-600 font-sans font-bold">In Indian Rupees (INR)</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <span className="text-stone-500 block text-[11px]">Credit / Balance Due:</span>
-          <div className="text-xl sm:text-2xl font-black text-rose-700 mt-0.5">
-            ₹{totalPendingDueINR.toLocaleString('en-IN')}
+        {/* ROW 2: Godown Stock Separated into Bags, Litres & Bait Units */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider font-sans">
+              Godown Stock by Packaging Units (Bags, Litres &amp; Bait Units)
+            </span>
+            <span className="text-[10px] text-stone-400 font-mono">
+              Total Godown Items: {totalStockUnits.toLocaleString()} units
+            </span>
           </div>
-          <span className="text-[10px] text-rose-600 font-sans font-bold">Outstanding Customer Balances</span>
-        </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <span className="text-stone-500 block text-[11px]">Godown Total Stock:</span>
-          <div className="text-xl sm:text-2xl font-black text-stone-900 mt-0.5">
-            {totalStockUnits.toLocaleString()}
-          </div>
-          <span className="text-[10px] text-stone-500 font-sans font-bold">Bags, Liters &amp; Bait Units</span>
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            {/* Unit 1: Bags (Ordinary Cements) */}
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-500 block text-[11px]">Cement Godown Stock:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 font-bold text-[10px] font-sans">
+                    50 kg Bags
+                  </span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-stone-900 mt-1 flex items-baseline gap-1">
+                  <span>{totalBags.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-stone-500">Bags</span>
+                </div>
+              </div>
+              <span className="text-[10px] text-stone-500 font-sans font-medium mt-1">
+                UltraTech OPC 53 &amp; Super PPC Cements
+              </span>
+            </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <span className="text-stone-500 block text-[11px]">Generated Sales Bills:</span>
-          <div className="text-xl sm:text-2xl font-black text-amber-700 mt-0.5">
-            {salesBills.length}
+            {/* Unit 2: Litres (Insecticides, Pesticides & Weedicides) */}
+            <div className="bg-white p-4 rounded-2xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/20 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-emerald-800 block text-[11px] font-medium">Chemicals Godown Stock:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px] font-sans">
+                    Liquid Litres
+                  </span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-emerald-900 mt-1 flex items-baseline gap-1">
+                  <span>{totalLitres.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-emerald-600">Litres</span>
+                </div>
+              </div>
+              <span className="text-[10px] text-emerald-700 font-sans font-medium mt-1">
+                Insecticides, Pesticides &amp; Weedicides
+              </span>
+            </div>
+
+            {/* Unit 3: Bait Units (Ant & Rat Poison) */}
+            <div className="bg-white p-4 rounded-2xl border border-amber-100 bg-gradient-to-br from-white to-amber-50/20 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-amber-800 block text-[11px] font-medium">Pest Poison Godown Stock:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[10px] font-sans">
+                    Bait Units
+                  </span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-amber-900 mt-1 flex items-baseline gap-1">
+                  <span>{totalBaitUnits.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-amber-700">Bait Units</span>
+                </div>
+              </div>
+              <span className="text-[10px] text-amber-700 font-sans font-medium mt-1">
+                Ant Syringe Tubes &amp; Rat Poison Cakes/Boxes
+              </span>
+            </div>
           </div>
-          <span className="text-[10px] text-amber-600 font-sans font-bold">Tax Invoices Recorded</span>
         </div>
       </div>
 

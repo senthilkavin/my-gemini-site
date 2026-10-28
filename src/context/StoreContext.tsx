@@ -10,7 +10,7 @@ import {
   AdminUser,
 } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_BILLS } from '../data/productsData';
-import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, getDocs, onSnapshot } from 'firebase/firestore';
 import { db, testFirebaseConnection } from '../lib/firebase';
 
 interface StoreContextType {
@@ -84,7 +84,9 @@ interface StoreContextType {
     note?: string
   ) => void;
   deleteSalesBill: (billId: string) => void;
-  clearAllSalesBills: () => void;
+  clearAllSalesBills: () => Promise<void> | void;
+  resetMerchantSalesToZero: () => Promise<void> | void;
+  resetCustomerBalanceToZero: () => Promise<void> | void;
   loadSampleBills: () => void;
   selectedBillForPrint: SalesBill | null;
   setSelectedBillForPrint: (bill: SalesBill | null) => void;
@@ -258,6 +260,13 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           });
           remoteBills.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           setSalesBills(remoteBills);
+        } else {
+          setSalesBills([]);
+          try {
+            localStorage.removeItem(STORAGE_KEYS.BILLS);
+          } catch {
+            // ignore
+          }
         }
       },
       (err) => console.warn('Firestore bills listener:', err)
@@ -705,10 +714,54 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast('Sales bill deleted.');
   };
 
-  const clearAllSalesBills = () => {
+  const clearAllSalesBills = async () => {
     setSalesBills([]);
-    localStorage.removeItem(STORAGE_KEYS.BILLS);
-    showToast('Sales register cleared. Merchant Sales reset to ₹0.');
+    try {
+      localStorage.removeItem(STORAGE_KEYS.BILLS);
+    } catch (e) {
+      console.warn('Storage sync error', e);
+    }
+
+    try {
+      const snap = await getDocs(collection(db, 'sales_bills'));
+      const deletes = snap.docs.map((docSnap) => deleteDoc(doc(db, 'sales_bills', docSnap.id)));
+      await Promise.all(deletes);
+    } catch (e) {
+      console.warn('Firestore bills clear error', e);
+    }
+
+    showToast('✓ Generated Sales Bills set to 0. Merchant Sales & Customer Balances are now ₹0.');
+  };
+
+  const resetMerchantSalesToZero = async () => {
+    setSalesBills((prev) =>
+      prev.map((b) => {
+        const updated: SalesBill = {
+          ...b,
+          amountPaidINR: 0,
+          balanceDueINR: b.grandTotalINR,
+          paymentStatus: 'due',
+        };
+        setDoc(doc(db, 'sales_bills', b.id), updated).catch(() => {});
+        return updated;
+      })
+    );
+    showToast('✓ Merchant Sales Collected reset to ₹0 across all bills.');
+  };
+
+  const resetCustomerBalanceToZero = async () => {
+    setSalesBills((prev) =>
+      prev.map((b) => {
+        const updated: SalesBill = {
+          ...b,
+          balanceDueINR: 0,
+          paymentStatus: 'paid',
+        };
+        setDoc(doc(db, 'sales_bills', b.id), updated).catch(() => {});
+        return updated;
+      })
+    );
+    showToast('✓ Outstanding Customer Balances (Credit Due) cleared to ₹0.');
   };
 
   const loadSampleBills = () => {
@@ -754,6 +807,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setBillPaymentState,
         deleteSalesBill,
         clearAllSalesBills,
+        resetMerchantSalesToZero,
+        resetCustomerBalanceToZero,
         loadSampleBills,
         selectedBillForPrint,
         setSelectedBillForPrint,
