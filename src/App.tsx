@@ -8,6 +8,7 @@ import { ContactSection } from './components/ContactSection';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { BillPrintModal } from './components/BillPrintModal';
+import { ConsumerPurchaseModal } from './components/ConsumerPurchaseModal';
 import { SessionTimeoutModal } from './components/SessionTimeoutModal';
 import { Footer } from './components/Footer';
 import { CheckCircle2, Phone, Building2, LayoutDashboard, Lock, Receipt } from 'lucide-react';
@@ -89,10 +90,11 @@ const AppContent: React.FC = () => {
         )}
       </div>
 
-      {/* Admin Login Modal for Owners */}
+      {/* Admin Login & Consumer Purchase Modals */}
       <div className="print:hidden">
         <AdminLoginModal />
         <SessionTimeoutModal />
+        <ConsumerPurchaseModal />
       </div>
 
       {/* Global Bill Print Modal (Accessible anywhere across the app) */}

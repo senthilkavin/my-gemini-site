@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ProductCategory } from '../types';
+import { isBagProduct, isLitreProduct, isBaitProduct } from '../utils/productUtils';
 
 export const HomeSection: React.FC = () => {
   const { setActiveTab, setSelectedCategory, products, isAdminLoggedIn, setIsLoginModalOpen, currentAdmin } = useStore();
@@ -143,25 +144,10 @@ export const HomeSection: React.FC = () => {
     },
   ];
 
-  const totalCementBags = products
-    .filter((p) => p.category === 'cement')
-    .reduce((sum, p) => sum + p.currentStock, 0);
-
-  const totalInsecticideUnits = products
-    .filter((p) => p.category === 'insecticide')
-    .reduce((sum, p) => sum + p.currentStock, 0);
-
-  const totalPesticideUnits = products
-    .filter((p) => p.category === 'pesticide')
-    .reduce((sum, p) => sum + p.currentStock, 0);
-
-  const totalAgroChemicals = products
-    .filter((p) => ['insecticide', 'pesticide', 'weedicide'].includes(p.category))
-    .reduce((sum, p) => sum + p.currentStock, 0);
-
-  const totalPoisonUnits = products
-    .filter((p) => ['ant_poison', 'rat_poison'].includes(p.category))
-    .reduce((sum, p) => sum + p.currentStock, 0);
+  const totalBags = products.filter(isBagProduct).reduce((sum, p) => sum + p.currentStock, 0);
+  const totalLitres = products.filter(isLitreProduct).reduce((sum, p) => sum + p.currentStock, 0);
+  const totalBaitUnits = products.filter(isBaitProduct).reduce((sum, p) => sum + p.currentStock, 0);
+  const totalPesticideUnits = products.filter((p) => p.category === 'pesticide').reduce((sum, p) => sum + p.currentStock, 0);
 
   const handleCategoryClick = (cat: ProductCategory) => {
     setSelectedCategory(cat);
@@ -257,7 +243,7 @@ export const HomeSection: React.FC = () => {
                       UltraTech &amp; Ordinary Cement
                     </span>
                     <span className="bg-black/70 backdrop-blur-md text-amber-300 border border-amber-500/40 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full">
-                      {totalCementBags} Bags in Stock
+                      {totalBags} Bags in Stock
                     </span>
                   </div>
 
@@ -279,7 +265,7 @@ export const HomeSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* IMAGE CARD 2: INSECTICIDES */}
+              {/* IMAGE CARD 2: INSECTICIDES & LIQUIDS */}
               <div
                 onClick={() => handleCategoryClick('insecticide')}
                 className="group relative rounded-3xl overflow-hidden border-2 border-stone-700/80 hover:border-emerald-400 transition-all duration-300 shadow-2xl cursor-pointer bg-stone-900 flex flex-col justify-end min-h-[380px] sm:min-h-[440px]"
@@ -294,10 +280,10 @@ export const HomeSection: React.FC = () => {
                 <div className="relative p-6 sm:p-7 space-y-3 z-10">
                   <div className="flex items-center justify-between gap-2">
                     <span className="bg-emerald-600 text-white text-xs font-black uppercase px-3 py-1 rounded-full shadow-lg">
-                      Insecticides
+                      Insecticides &amp; Agrochemicals
                     </span>
                     <span className="bg-black/70 backdrop-blur-md text-emerald-300 border border-emerald-500/40 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full">
-                      {totalInsecticideUnits} Units in Stock
+                      {totalLitres} Litres in Stock
                     </span>
                   </div>
 
@@ -407,7 +393,7 @@ export const HomeSection: React.FC = () => {
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl font-black font-mono text-stone-900">
-                  {totalCementBags}
+                  {totalBags}
                 </span>
                 <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
                   Bags Ready for Loading
@@ -417,28 +403,28 @@ export const HomeSection: React.FC = () => {
 
             <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200">
               <span className="text-xs text-stone-500 block font-medium">
-                Crop Protection (Insecticides, Pesticides, Weedicides):
+                Chemicals &amp; Agrochemicals (Insecticides, Pesticides, Weedicides):
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl font-black font-mono text-stone-900">
-                  {totalAgroChemicals}
+                  {totalLitres}
                 </span>
                 <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
-                  Units in Stock
+                  Liquid Litres in Stock
                 </span>
               </div>
             </div>
 
             <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200">
               <span className="text-xs text-stone-500 block font-medium">
-                Pest Eradication (Ant Poison &amp; Rat Poison):
+                Pest Poison (Ant Poison Syringes &amp; Rat Poison Cakes):
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl font-black font-mono text-stone-900">
-                  {totalPoisonUnits}
+                  {totalBaitUnits}
                 </span>
                 <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
-                  Bait Packs Available
+                  Bait Units Available
                 </span>
               </div>
             </div>

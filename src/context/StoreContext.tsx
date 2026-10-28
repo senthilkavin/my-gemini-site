@@ -12,6 +12,7 @@ import {
 import { INITIAL_PRODUCTS, INITIAL_BILLS } from '../data/productsData';
 import { collection, doc, setDoc, deleteDoc, getDocs, onSnapshot } from 'firebase/firestore';
 import { db, testFirebaseConnection } from '../lib/firebase';
+import { getPackagingUnitName } from '../utils/productUtils';
 
 interface StoreContextType {
   products: Product[];
@@ -91,6 +92,20 @@ interface StoreContextType {
   selectedBillForPrint: SalesBill | null;
   setSelectedBillForPrint: (bill: SalesBill | null) => void;
 
+  // Consumer Instant Purchase with Auto Stock Deduction (Bags, Litres, Bait Units)
+  consumerPurchaseProduct: Product | null;
+  setConsumerPurchaseProduct: (p: Product | null) => void;
+  consumerPurchase: (purchaseInput: {
+    productId: string;
+    quantity: number;
+    customerName: string;
+    customerPhone: string;
+    customerAddress?: string;
+    paymentMode: PaymentMode;
+    amountPaidINR?: number;
+    notes?: string;
+  }) => SalesBill | null;
+
   // Dynamic Owner Password & Recovery
   ownerPassword: string;
   updateOwnerPassword: (newPass: string) => void;
@@ -161,6 +176,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const [selectedBillForPrint, setSelectedBillForPrint] = useState<SalesBill | null>(null);
+  const [consumerPurchaseProduct, setConsumerPurchaseProduct] = useState<Product | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -605,44 +621,119 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       notes: billInput.notes?.trim() || '',
     };
 
-    // Auto-deduct stock from products
-    setProducts((prevProds) =>
-      prevProds.map((p) => {
+    // Auto-deduct stock from products and immediately persist to Firestore
+    setProducts((prevProds) => {
+      const updatedList = prevProds.map((p) => {
         const soldItem = billInput.items.find((item) => item.productId === p.id);
         if (soldItem) {
           const remaining = Math.max(0, p.currentStock - soldItem.quantity);
           const stockStatus: Product['stockStatus'] =
             remaining <= 0 ? 'out_of_stock' : remaining <= 15 ? 'low_stock' : 'in_stock';
-          return {
+          const updated: Product = {
             ...p,
             currentStock: remaining,
             stockStatus,
           };
+          // Persist deducted stock to Firestore
+          setDoc(doc(db, 'products', updated.id), updated).catch((err) => {
+            console.error('Error updating product stock in Firestore:', err);
+          });
+          return updated;
         }
         return p;
-      })
-    );
+      });
+
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updatedList));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+
+      return updatedList;
+    });
 
     // Record stock deduction in audit trail
     billInput.items.forEach((item) => {
+      const currentProd = products.find((p) => p.id === item.productId);
+      const remainingStock = currentProd ? Math.max(0, currentProd.currentStock - item.quantity) : 0;
       const adj: StockAdjustment = {
         id: `adj-bill-${Date.now()}-${item.productId}`,
         productId: item.productId,
         productName: item.productName,
         quantityAdded: -item.quantity,
-        newStock: 0, // will reflect next
+        newStock: remainingStock,
         date: new Date().toISOString(),
         note: `Sold on Bill #${billNumber} to ${billInput.customerName}`,
-        updatedBy: currentAdmin?.name || 'Sahadevan',
+        updatedBy: billInput.billedBy || currentAdmin?.name || 'Authorized Merchant',
       };
       setStockAdjustments((prev) => [adj, ...prev]);
+      setDoc(doc(db, 'stock_adjustments', adj.id), adj).catch(() => {});
     });
 
     setSalesBills((prev) => [newBill, ...prev]);
 
-    setDoc(doc(db, 'sales_bills', newBill.id), newBill).catch(() => {});
+    setDoc(doc(db, 'sales_bills', newBill.id), newBill).catch((err) => {
+      console.error('Error saving sales bill to Firestore:', err);
+    });
 
     showToast(`Bill #${billNumber} generated! ₹${amountPaidINR} received.`);
+    return newBill;
+  };
+
+  // Consumer Direct Purchase: Automatically deducts Bags, Liquid Litres, or Bait Units based on purchase
+  const consumerPurchase = (purchaseInput: {
+    productId: string;
+    quantity: number;
+    customerName: string;
+    customerPhone: string;
+    customerAddress?: string;
+    paymentMode: PaymentMode;
+    amountPaidINR?: number;
+    notes?: string;
+  }): SalesBill | null => {
+    const product = products.find((p) => p.id === purchaseInput.productId);
+    if (!product) {
+      showToast('Selected product was not found in godown.');
+      return null;
+    }
+
+    if (product.currentStock <= 0) {
+      showToast(`Sorry, "${product.name}" is currently out of stock.`);
+      return null;
+    }
+
+    const buyQty = Math.max(1, Math.min(product.currentStock, purchaseInput.quantity));
+    const unitPrice = product.unitPriceINR > 0 ? product.unitPriceINR : 380;
+    const itemTotalINR = buyQty * unitPrice;
+    const unitLabel = getPackagingUnitName(product);
+
+    const billItem: BillItem = {
+      productId: product.id,
+      productName: product.name,
+      category: product.category,
+      packagingUnit: product.packagingUnit || unitLabel,
+      quantity: buyQty,
+      unitPriceINR: unitPrice,
+      totalINR: itemTotalINR,
+    };
+
+    const newBill = createSalesBill({
+      customerName: purchaseInput.customerName.trim(),
+      customerPhone: purchaseInput.customerPhone.trim(),
+      customerAddress: purchaseInput.customerAddress?.trim() || 'Customer Purchase Delivery',
+      items: [billItem],
+      discountINR: 0,
+      taxGSTPercent: 0,
+      amountPaidINR: purchaseInput.amountPaidINR ?? itemTotalINR,
+      paymentMode: purchaseInput.paymentMode,
+      billedBy: 'Consumer Purchase',
+      notes:
+        purchaseInput.notes?.trim() ||
+        `Direct Consumer Purchase of ${buyQty} ${unitLabel} (${product.name})`,
+    });
+
+    setSelectedBillForPrint(newBill);
+    showToast(`✓ Purchase successful! ${buyQty} ${unitLabel} deducted from godown stock.`);
     return newBill;
   };
 
@@ -812,6 +903,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         loadSampleBills,
         selectedBillForPrint,
         setSelectedBillForPrint,
+        consumerPurchaseProduct,
+        setConsumerPurchaseProduct,
+        consumerPurchase,
         ownerPassword,
         updateOwnerPassword,
       }}

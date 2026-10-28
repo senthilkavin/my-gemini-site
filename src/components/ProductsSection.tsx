@@ -21,10 +21,12 @@ import {
   Sparkles,
   Receipt,
   Lock,
+  ShoppingCart,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { Product, ProductCategory } from '../types';
 import { INITIAL_PRODUCTS, DEMO_COMMODITY_IMAGES } from '../data/productsData';
+import { getPackagingUnitName } from '../utils/productUtils';
 
 export const ProductsSection: React.FC = () => {
   const {
@@ -41,6 +43,7 @@ export const ProductsSection: React.FC = () => {
     isAdminLoggedIn,
     setActiveTab,
     setIsLoginModalOpen,
+    setConsumerPurchaseProduct,
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -712,10 +715,25 @@ export const ProductsSection: React.FC = () => {
                         </div>
                       ) : (
                         <span className="font-mono font-black text-emerald-800 px-2.5 py-1 text-xs bg-emerald-100/80 border border-emerald-300 rounded-lg">
-                          {p.currentStock} Units in Godown
+                          {p.currentStock} {getPackagingUnitName(p)} in Godown
                         </span>
                       )}
                     </div>
+
+                    {/* Consumer Purchase Button: Automatically deducts Bags, Liquid Litres, or Bait Units */}
+                    <button
+                      type="button"
+                      onClick={() => setConsumerPurchaseProduct(p)}
+                      disabled={p.currentStock <= 0}
+                      className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-50 disabled:bg-stone-200 disabled:text-stone-500 text-stone-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/20 transition-all cursor-pointer"
+                    >
+                      <ShoppingCart className="w-4 h-4 text-stone-950" />
+                      {p.currentStock > 0 ? (
+                        <span>Instant Purchase ({getPackagingUnitName(p)} Deducted)</span>
+                      ) : (
+                        <span>Out of Stock</span>
+                      )}
+                    </button>
 
                     {/* Direct Contact Calling Buttons */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
