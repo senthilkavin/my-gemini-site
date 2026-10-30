@@ -74,11 +74,11 @@ export const Navbar: React.FC = () => {
             Sahadevan: <strong className="text-white">+91 94864 26294</strong>
           </a>
           <a
-            href="tel:+919790974822"
+            href="tel:+919790924822"
             className="flex items-center gap-1.5 bg-emerald-900/70 hover:bg-emerald-800 text-emerald-200 hover:text-white px-2.5 py-1 rounded-lg border border-emerald-700/50 transition-colors font-mono font-medium"
           >
             <Phone className="w-3 h-3 text-emerald-400" />
-            Arun Kavinaya: <strong className="text-white">+91 97909 74822</strong>
+            Arun Kavinaya: <strong className="text-white">+91 97909 24822</strong>
           </a>
         </div>
       </div>
@@ -255,13 +255,13 @@ export const Navbar: React.FC = () => {
                   </div>
                 </a>
                 <a
-                  href="tel:+919790974822"
+                  href="tel:+919790924822"
                   className="p-2 rounded-xl bg-emerald-900/60 text-white font-mono flex items-center gap-1.5"
                 >
                   <Phone className="w-3.5 h-3.5 text-emerald-400" />
                   <div>
                     <span className="text-[9px] text-emerald-300 block">Arun Kavinaya</span>
-                    <span className="font-bold text-[11px]">+91 97909 74822</span>
+                    <span className="font-bold text-[11px]">+91 97909 24822</span>
                   </div>
                 </a>
               </div>

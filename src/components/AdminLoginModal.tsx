@@ -457,7 +457,7 @@ export const AdminLoginModal: React.FC = () => {
                   className="p-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-300 text-left transition-colors cursor-pointer"
                 >
                   <div className="font-extrabold text-stone-900 text-xs">Arun Kavinaya</div>
-                  <div className="text-[10px] text-emerald-700 font-mono">+91 97909 74822</div>
+                  <div className="text-[10px] text-emerald-700 font-mono">+91 97909 24822</div>
                   <div className="text-[9px] text-stone-500 mt-0.5">Click to auto-login</div>
                 </button>
               </div>

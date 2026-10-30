@@ -39,7 +39,7 @@ export const formatBillWhatsAppText = (bill: SalesBill): string => {
     `*Billed By:* ${bill.billedBy}`,
     `*Proprietors Contact:*`,
     `Sahadevan: +91 94864 26294`,
-    `Arun Kavinaya: +91 97909 74822`,
+    `Arun Kavinaya: +91 97909 24822`,
     `Thank you for your business!`,
   ]
     .filter(Boolean)
@@ -419,7 +419,7 @@ export const generatePrintableInvoiceHtml = (bill: SalesBill): string => {
           <h1 class="title">GokulaKrishnan Agencies</h1>
           <p class="subtitle">Ordinary Building Cements (OPC 53/43/PPC) • Insecticides • Pesticides • Weedicides • Ant &amp; Rat Poison</p>
           <div class="contacts">
-            <span>Sahadevan: +91 94864 26294</span> &nbsp;•&nbsp; <span>Arun Kavinaya: +91 97909 74822</span>
+            <span>Sahadevan: +91 94864 26294</span> &nbsp;•&nbsp; <span>Arun Kavinaya: +91 97909 24822</span>
           </div>
         </div>
 

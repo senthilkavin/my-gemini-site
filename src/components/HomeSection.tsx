@@ -574,19 +574,19 @@ export const HomeSection: React.FC = () => {
                   </p>
                 </div>
                 <span className="font-mono font-black text-emerald-300 text-base">
-                  +91 97909 74822
+                  +91 97909 24822
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <a
-                  href="tel:+919790974822"
+                  href="tel:+919790924822"
                   className="py-2.5 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow"
                 >
                   <Phone className="w-4 h-4" /> Call Arun
                 </a>
                 <a
-                  href="https://wa.me/919790974822?text=Hello%20Arun%20sir%2C%20inquiring%20about%20GokulaKrishnan%20Agencies%20stocks"
+                  href="https://wa.me/919790924822?text=Hello%20Arun%20sir%2C%20inquiring%20about%20GokulaKrishnan%20Agencies%20stocks"
                   target="_blank"
                   rel="noreferrer"
                   className="py-2.5 px-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow"
@@ -643,7 +643,7 @@ export const HomeSection: React.FC = () => {
               <Phone className="w-6 h-6 text-purple-600" />
               <h4 className="font-bold text-stone-900 text-sm">Direct Owner Support</h4>
               <p className="text-stone-600 leading-relaxed">
-                Direct mobile access to Sahadevan (+91 94864 26294) and Arun Kavinaya (+91 97909 74822) for daily rates, dosage advice, and bulk booking.
+                Direct mobile access to Sahadevan (+91 94864 26294) and Arun Kavinaya (+91 97909 24822) for daily rates, dosage advice, and bulk booking.
               </p>
             </div>
           </div>

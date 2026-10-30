@@ -548,7 +548,7 @@ export const AdminDashboard: React.FC = () => {
             </span>
             <span className="text-stone-500">•</span>
             <span className="text-stone-300">
-              Partner: <strong>Sahadevan (+91 94864 26294)</strong> &amp; <strong>Arun Kavinaya (+91 97909 74822)</strong>
+              Partner: <strong>Sahadevan (+91 94864 26294)</strong> &amp; <strong>Arun Kavinaya (+91 97909 24822)</strong>
             </span>
             <span className="text-stone-500">•</span>
             <span className="flex items-center gap-1 font-semibold text-[11px] text-amber-300 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-800/60" title="Security policy: prompts after 10 minutes of inactivity before auto-logout">
@@ -1702,7 +1702,7 @@ export const AdminDashboard: React.FC = () => {
                         className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 font-bold text-stone-900"
                       >
                         <option value="Sahadevan">Sahadevan (+91 94864 26294)</option>
-                        <option value="Arun Kavinaya">Arun Kavinaya (+91 97909 74822)</option>
+                        <option value="Arun Kavinaya">Arun Kavinaya (+91 97909 24822)</option>
                       </select>
                     </div>
                   </div>

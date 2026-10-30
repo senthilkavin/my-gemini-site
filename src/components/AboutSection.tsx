@@ -142,13 +142,13 @@ export const AboutSection: React.FC = () => {
 
             <div className="pt-4 border-t border-stone-100 flex flex-col sm:flex-row items-center gap-3">
               <a
-                href="tel:+919790974822"
+                href="tel:+919790924822"
                 className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition-all"
               >
-                <Phone className="w-4 h-4" /> Call +91 97909 74822
+                <Phone className="w-4 h-4" /> Call +91 97909 24822
               </a>
               <a
-                href="https://wa.me/919790974822?text=Hello%20Arun%20sir%2C%20inquiring%20about%20GokulaKrishnan%20Agencies%20products"
+                href="https://wa.me/919790924822?text=Hello%20Arun%20sir%2C%20inquiring%20about%20GokulaKrishnan%20Agencies%20products"
                 target="_blank"
                 rel="noreferrer"
                 className="w-full sm:w-auto py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition-all"

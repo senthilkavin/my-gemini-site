@@ -239,7 +239,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ bill, onClose })
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-emerald-700" /> Arun Kavinaya: +91 97909 74822
+                    <Phone className="w-3 h-3 text-emerald-700" /> Arun Kavinaya: +91 97909 24822
                   </span>
                 </div>
               </div>

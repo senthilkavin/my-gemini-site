@@ -69,7 +69,7 @@ export const Footer: React.FC = () => {
             <div>
               <h4 className="font-bold text-white text-sm">Direct Managing Partners</h4>
               <p className="text-stone-400 text-xs mt-0.5">
-                Direct phone and WhatsApp access to Sahadevan (+91 9486426294) and Arun Kavinaya (+91 9790974822).
+                Direct phone and WhatsApp access to Sahadevan (+91 9486426294) and Arun Kavinaya (+91 9790924822).
               </p>
             </div>
           </div>
@@ -257,14 +257,14 @@ export const Footer: React.FC = () => {
               </div>
               <div className="flex items-center justify-between pt-1">
                 <a
-                  href="tel:+919790974822"
+                  href="tel:+919790924822"
                   className="font-mono text-emerald-300 hover:text-white font-bold flex items-center gap-1.5"
                 >
                   <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                  +91 97909 74822
+                  +91 97909 24822
                 </a>
                 <a
-                  href="https://wa.me/919790974822"
+                  href="https://wa.me/919790924822"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[11px] bg-green-600 hover:bg-green-500 text-white font-semibold px-2 py-0.5 rounded flex items-center gap-1"

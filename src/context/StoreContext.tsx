@@ -336,14 +336,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       cleanPass === 'gokul123' ||
       (cleanUser === 'admin' && (cleanPass === 'admin' || cleanPass === 'password')) ||
       (cleanUser === 'sahadevan' && cleanPass === '9486426294') ||
-      (cleanUser === 'arun' && cleanPass === '9790974822')
+      (cleanUser === 'arun' && cleanPass === '9790924822')
     ) {
       const userObj: AdminUser =
         cleanUser === 'arun'
           ? {
               username: 'arun',
               name: 'Arun Kavinaya',
-              phone: '+91 97909 74822',
+              phone: '+91 97909 24822',
               role: 'partner',
             }
           : {

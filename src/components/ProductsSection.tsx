@@ -546,7 +546,7 @@ export const ProductsSection: React.FC = () => {
                           <Phone className="w-3 h-3" /> Sahadevan
                         </a>
                         <a
-                          href="tel:+919790974822"
+                          href="tel:+919790924822"
                           className="flex-1 py-2 px-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-amber-300 font-bold text-[11px] flex items-center justify-center gap-1 border border-stone-700 shadow"
                         >
                           <Phone className="w-3 h-3" /> Arun
@@ -732,7 +732,7 @@ export const ProductsSection: React.FC = () => {
                       </a>
 
                       <a
-                        href="tel:+919790974822"
+                        href="tel:+919790924822"
                         className="py-2 px-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-bold flex items-center justify-center gap-1 shadow-sm transition-all"
                         title="Call Arun Kavinaya"
                       >
